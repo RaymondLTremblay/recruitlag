@@ -21,11 +21,15 @@
 #'   a unit with one recruit has concentration 1 by arithmetic rather than by
 #'   biology.
 #'
-#' @details Each unit's periods are re-indexed to start at 1 before its
-#'   ceiling is computed, so that a unit watched from 2015 to 2021 is treated
-#'   as a seven-period record rather than as a 22-period record with fifteen
-#'   silent years in front of it. Units are otherwise independent: nothing is
-#'   pooled, and the kernels are the same for all of them.
+#' @details Rows in which both reproduction and recruits are missing are
+#'   taken as periods in which that unit was not watched, and are dropped
+#'   before its periods are re-indexed to start at 1. A unit followed from
+#'   2015 to 2021 is therefore a seven-period record, not a 22-period record
+#'   with fifteen silent years in front of it. Keeping them would read those
+#'   years as periods with no reproduction, which raises the unit's ceiling
+#'   and makes the test look weaker than it is. Units are otherwise
+#'   independent: nothing is pooled, and the kernels are the same for all of
+#'   them.
 #'
 #' @return A named list of `lag_ceiling` objects, of class
 #'   `lag_ceiling_list`, with the skipped units and the reason in
@@ -66,9 +70,20 @@ lag_ceiling_by <- function(data, unit = "unit", period = "period",
                            min_periods = K + 3L, min_recruits = 2) {
   missing <- match.arg(missing)
   data <- as.data.frame(data)
-  need <- c(unit, period, reproduction, recruits)
-  miss <- setdiff(need, names(data))
-  if (length(miss)) stop("column(s) not found in data: ", paste(miss, collapse = ", "))
+  rl_check_long(data, period, reproduction, recruits, unit = unit, what = "lag_ceiling_by()")
+  rl_check_kernels(kernels, K)
+
+  # A row carrying neither reproduction nor recruits is a period in which this
+  # unit was not watched. Such rows are dropped before the periods are
+  # re-indexed, so a unit followed from 2015 to 2021 is a seven-period record
+  # and not a 22-period record with fifteen silent years in front of it. They
+  # would otherwise be read as periods with no reproduction, which raises that
+  # unit's ceiling and makes the test look weaker than it is.
+  blank <- is.na(data[[reproduction]]) & is.na(data[[recruits]])
+  dropped_rows <- sum(blank)
+  data <- data[!blank, , drop = FALSE]
+  if (!nrow(data))
+    rl_abort("Every row has neither reproduction nor recruits, so there is nothing to do.")
 
   parts <- split(data, as.character(data[[unit]]))
   out <- list(); skipped <- character(0)
@@ -85,14 +100,19 @@ lag_ceiling_by <- function(data, unit = "unit", period = "period",
       skipped[nm] <- sprintf("%g recruits, fewer than min_recruits = %g", nrec, min_recruits); next
     }
     s[[period]] <- as.integer(s[[period]]) - min(as.integer(s[[period]])) + 1L
-    ce <- tryCatch(lag_ceiling(s, K = K, lag0 = lag0, kernels = kernels, missing = missing,
-                               period = period, reproduction = reproduction, recruits = recruits),
+    ce <- tryCatch(suppressWarnings(
+            lag_ceiling(s, K = K, lag0 = lag0, kernels = kernels, missing = missing,
+                        period = period, reproduction = reproduction, recruits = recruits)),
                    error = function(e) e)
     if (inherits(ce, "error")) { skipped[nm] <- conditionMessage(ce); next }
     out[[nm]] <- ce
   }
-  if (!length(out)) stop("no unit met min_periods and min_recruits")
-  structure(out, class = "lag_ceiling_list", skipped = skipped)
+  if (!length(out))
+    rl_abort("No unit could be given a ceiling. All ", length(parts),
+             " were skipped, for these reasons:\n  ",
+             paste(sprintf("%s: %s", names(skipped), skipped), collapse = "\n  "),
+             "\nLower min_periods or min_recruits if the units really are this short.")
+  structure(out, class = "lag_ceiling_list", skipped = skipped, dropped_rows = dropped_rows)
 }
 
 #' @export
@@ -100,6 +120,9 @@ print.lag_ceiling_list <- function(x, digits = 3, ...) {
   cat(sprintf("Ceiling for %d units, K = %d, lag0 = %d\n",
               length(x), x[[1]]$K, x[[1]]$lag0))
   print(as.data.frame(x), row.names = FALSE, digits = digits)
+  dr <- attr(x, "dropped_rows")
+  if (!is.null(dr) && dr > 0)
+    cat(sprintf("  %d row(s) dropped as unwatched periods (no reproduction and no recruits)\n", dr))
   sk <- attr(x, "skipped")
   if (length(sk)) {
     cat(sprintf("\n%d unit(s) skipped:\n", length(sk)))

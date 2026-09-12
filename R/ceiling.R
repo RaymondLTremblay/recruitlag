@@ -109,11 +109,21 @@ lag_ceiling <- function(X, R = NULL, t_R = NULL, K, lag0 = 1L,
     sf <- series_from(X, period, reproduction, recruits)
     X <- sf$X; R <- sf$R; t_R <- sf$t_R
   }
-  if (is.null(R)) stop("R is required when X is not a data frame")
+  if (is.null(R))
+    rl_abort("X was given as a numeric vector, so the recruit counts have to come from R. ",
+             "Either pass R = <the recruit counts>, or pass the whole data frame as X and ",
+             "name its columns with period =, reproduction = and recruits =.")
   X <- as.numeric(X); R <- as.numeric(R)
   if (is.null(t_R)) t_R <- seq.int(length(X) - length(R) + 1L, length(X))
-  stopifnot(length(t_R) == length(R), all(t_R >= 1), all(t_R <= length(X)),
-            inherits(kernels, "lag_kernels"), attr(kernels, "K") == K)
+  if (length(t_R) != length(R))
+    rl_abort("t_R and R have different lengths: ", length(t_R), " periods but ", length(R),
+             " recruit counts. t_R says at which periods of X the recruits in R were scored, ",
+             "so the two must match one for one.")
+  if (any(t_R < 1) || any(t_R > length(X)))
+    rl_abort("t_R contains period(s) outside the reproductive record: ",
+             rl_list(sort(t_R[t_R < 1 | t_R > length(X)])),
+             ". X has ", length(X), " periods, so t_R must lie between 1 and ", length(X), ".")
+  rl_check_kernels(kernels, K)
   res <- vapply(kernels, function(k) {
     o <- convolve_lag(X, k$w, t_R, lag0, missing)
     o <- o[!is.na(o)]

@@ -103,7 +103,11 @@ lag_kernels <- function(K, families = c("delay", "window", "geometric", "dirichl
                         rho = c(0.2, 0.4, 0.6, 0.8, 0.95),
                         n_dirichlet = 0L, alpha = 0.3,
                         bin = NULL, unit = "", extra = NULL) {
-  K <- as.integer(K); stopifnot(K >= 0)
+  if (!is.numeric(K) || length(K) != 1 || is.na(K) || K < 0 || K != round(K))
+    rl_abort("K must be a single whole number of 0 or more: the number of lag bins beyond ",
+             "the first, so a kernel has K + 1 weights. It was given as ",
+             paste(format(K), collapse = ", "), ".")
+  K <- as.integer(K)
   families <- match.arg(families, several.ok = TRUE)
   windows <- match.arg(windows)
   lab <- function(from, to) {
@@ -133,9 +137,17 @@ lag_kernels <- function(K, families = c("delay", "window", "geometric", "dirichl
       add(sprintf("Dirichlet(%g) draw %d", alpha, i), sprintf("Dirichlet(%g)", alpha), W[i, ])
   }
   if (!is.null(extra)) {
-    stopifnot(is.list(extra), !is.null(names(extra)))
+    if (!is.list(extra) || is.null(names(extra)) || any(names(extra) == ""))
+      rl_abort("`extra` must be a NAMED list of weight vectors, for example ",
+               "extra = list(`fitted profile` = c(0.4, 0.3, 0.2, 0.1)). ",
+               "The names become the kernel labels.")
     for (nm in names(extra)) {
-      stopifnot(length(extra[[nm]]) == K + 1, all(extra[[nm]] >= 0))
+      if (length(extra[[nm]]) != K + 1)
+        rl_abort('The extra kernel "', nm, '" has ', length(extra[[nm]]),
+                 " weights, but K = ", K, " needs exactly ", K + 1, ".")
+      if (any(extra[[nm]] < 0, na.rm = TRUE) || anyNA(extra[[nm]]))
+        rl_abort('The extra kernel "', nm, '" has negative or missing weights. ',
+                 "Lag weights are non-negative and are renormalised to sum to 1.")
       add(nm, "supplied", extra[[nm]])
     }
   }

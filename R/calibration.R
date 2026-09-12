@@ -80,10 +80,14 @@
 #' ceiling_calibration(ce, nsim = 2000)
 #' @export
 ceiling_calibration <- function(x, vmr = NULL, nsim = 20000L) {
-  stopifnot(inherits(x, "lag_ceiling"))
+  rl_check_class(x, "lag_ceiling", "x", "lag_ceiling()")
   R <- x$R; n <- length(R); mu <- mean(R)
   if (is.null(vmr)) vmr <- stats::var(R) / mu
-  if (vmr <= 1) stop("vmr must exceed 1 for a negative-binomial null; the counts are not overdispersed")
+  if (vmr <= 1)
+    rl_abort("The recruit counts have a variance-to-mean ratio of ", signif(vmr, 3),
+             ", which is at or below 1, so they are not overdispersed and the ",
+             "negative-binomial null does not exist. The counts are Poisson or tighter. ",
+             "Pass a value above 1 with vmr = if you want to simulate a clumped null anyway.")
   phi <- mu^2 / (mu * (vmr - 1))
   m1 <- convolve_lag(x$X, x$best$w, x$t_R, x$lag0, x$missing)
   m1 <- m1 * mu / mean(m1)

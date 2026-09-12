@@ -20,7 +20,7 @@ rl_theme <- function(base_size = 11)
 #' rain_series(ce, unit = "census")
 #' @export
 rain_series <- function(x, unit = "period") {
-  stopifnot(inherits(x, "lag_ceiling"))
+  rl_check_class(x, "lag_ceiling", "x", "lag_ceiling()")
   d <- rbind(
     data.frame(series = sprintf("reproduction, Gini %.2f (the ceiling)", x$theorem["gini"]),
                t = seq_along(x$X), y = x$X, col = rl_blue),
@@ -56,8 +56,19 @@ rain_strip <- function(..., index = c("gini", "cv")) {
   index <- match.arg(index)
   objs <- list(...)
   if (length(objs) == 1 && is.list(objs[[1]]) && !inherits(objs[[1]], "lag_ceiling")) objs <- objs[[1]]
-  stopifnot(all(vapply(objs, inherits, logical(1), "lag_ceiling")))
+  bad <- !vapply(objs, inherits, logical(1), "lag_ceiling")
+  if (any(bad))
+    rl_abort(sum(bad), " of the ", length(objs), " things passed to rain_strip() ",
+             if (sum(bad) == 1) "is" else "are", " not a lag_ceiling object (",
+             rl_list(unique(vapply(objs[bad], function(z) class(z)[1], character(1)))), "). ",
+             "Pass lag_ceiling() results, named, or the whole list from lag_ceiling_by().")
   if (is.null(names(objs))) names(objs) <- paste("series", seq_along(objs))
+  if (length(objs) > 12)
+    rl_abort("rain_strip() was given ", length(objs), " series. One strip per series is ",
+             "readable up to about a dozen; beyond that the strips are too thin to read ",
+             "and the labels collide. For many units use rain_units(), which puts every ",
+             "unit's ceiling against its observed concentration on one pair of axes. ",
+             "To keep the strips, pass a subset, for example rain_strip(ces[1:8]).")
   d <- do.call(rbind, lapply(names(objs), function(nm) {
     o <- objs[[nm]]
     data.frame(strip = nm, ceiling = unname(o$theorem[index]), observed = unname(o$obs[index]),
@@ -155,9 +166,12 @@ rain_profiles <- function(profiles, bin = NULL, unit = "", lag0 = 1L) {
 #' @param period Label for the time axis.
 #' @export
 rain_expected <- function(x, profiles, period = "census") {
-  stopifnot(inherits(x, "lag_ceiling"))
+  rl_check_class(x, "lag_ceiling", "x", "lag_ceiling()")
   pl <- as_profile_list(profiles)
-  stopifnot(all(lengths(pl) == x$K + 1))
+  if (!all(lengths(pl) == x$K + 1))
+    rl_abort("The profiles have ", rl_list(unique(lengths(pl))), " weights, but this ",
+             "lag_ceiling was built with K = ", x$K, ", which needs ", x$K + 1,
+             " weights in every profile.")
   tot <- sum(x$R)
   d <- do.call(rbind, lapply(names(pl), function(nm) {
     e <- convolve_lag(x$X, pl[[nm]], x$t_R, x$lag0, x$missing)
@@ -181,7 +195,13 @@ rain_expected <- function(x, profiles, period = "census") {
 as_profile_list <- function(profiles) {
   if (inherits(profiles, "lag_kernels"))
     profiles <- stats::setNames(lapply(profiles, function(k) k$w), vapply(profiles, function(k) k$label, character(1)))
-  stopifnot(is.list(profiles), !is.null(names(profiles)), length(unique(lengths(profiles))) == 1)
+  if (!is.list(profiles) || is.null(names(profiles)) || any(names(profiles) == ""))
+    rl_abort("`profiles` must be a NAMED list of weight vectors, for example ",
+             "list(`evenly spread` = rep(0.25, 4)), or a lag_kernels object. ",
+             "The names are what the legend shows.")
+  if (length(unique(lengths(profiles))) != 1)
+    rl_abort("The profiles have different lengths (", rl_list(unique(lengths(profiles))),
+             "). Every profile must cover the same horizon.")
   profiles
 }
 
@@ -262,4 +282,154 @@ plot.host_lag_test <- function(x, statistic = c("silent", "gini", "cv", "max"), 
                   subtitle = "Dashed: flat reference. Dotted: 0.05. Values at the floor were never reached in simulation.") +
     rl_theme() +
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 20, hjust = 1))
+}
+
+
+#' Every unit at once: its ceiling against what it recorded
+#'
+#' The companion figure to [rain_strip()], for when there are more units than
+#' strips can show. Each point is one unit: its own ceiling on the horizontal
+#' axis, the concentration of its observed recruitment on the vertical. The
+#' diagonal is equality, so a unit above the line recorded recruitment more
+#' concentrated than any delay of its own reproduction can predict, and the
+#' vertical distance from the line is the size of that gap.
+#'
+#' @param x A `lag_ceiling_list`, as returned by [lag_ceiling_by()], or a
+#'   named list of `lag_ceiling` objects.
+#' @param index `"gini"` or `"cv"`.
+#' @param label Units to label, as a character vector of names, or `NULL` for
+#'   none. Labelling more than a handful defeats the purpose of this figure.
+#' @return A ggplot.
+#'
+#' @section Scale and how to read it:
+#'
+#' Both axes are concentration indices on the scale of [rain_gini()], so both
+#' run from 0 to a maximum set by the number of periods, and the diagonal is
+#' the only line that matters: it is the ceiling. The spread along the
+#' horizontal axis is the part people do not expect. It shows how much the
+#' bound itself varies between units, because the ceiling is a property of
+#' each unit's own reproductive record, and a unit whose reproduction is
+#' patchy sits far to the right and can never be refuted.
+#'
+#' A unit at ceiling 0, whose reproduction is perfectly flat, sits on the
+#' vertical axis. Any recruitment concentration at all is infinitely above
+#' its ceiling, which is correct and is why the exceedance ratio is not used
+#' as the vertical axis here.
+#'
+#' @examples
+#' ces <- lag_ceiling_by(lepanthes_hosts, unit = "host",
+#'                       reproduction = "inflorescences", K = 4,
+#'                       kernels = lag_kernels(4, bin = 6, unit = "mo"))
+#' rain_units(ces)
+#' @export
+rain_units <- function(x, index = c("gini", "cv"), label = NULL) {
+  index <- match.arg(index)
+  if (!is.list(x) || !length(x)) rl_abort("`x` must be a non-empty list of lag_ceiling objects.")
+  bad <- !vapply(x, inherits, logical(1), "lag_ceiling")
+  if (any(bad))
+    rl_abort(sum(bad), " of the ", length(x), " elements are not lag_ceiling objects. ",
+             "Pass the result of lag_ceiling_by().")
+  if (is.null(names(x))) names(x) <- paste("unit", seq_along(x))
+  d <- do.call(rbind, lapply(names(x), function(nm) {
+    o <- x[[nm]]
+    data.frame(unit = nm, ceiling = unname(o$theorem[index]),
+               observed = unname(o$obs[index]), n = length(o$R),
+               stringsAsFactors = FALSE)
+  }))
+  above <- sum(d$observed > d$ceiling)
+  lim <- c(0, max(d$ceiling, d$observed, na.rm = TRUE) * 1.05)
+  d$lab <- ifelse(d$unit %in% label, d$unit, NA_character_)
+  ggplot2::ggplot(d, ggplot2::aes(.data$ceiling, .data$observed)) +
+    ggplot2::geom_polygon(data = data.frame(x = c(lim[1], lim[2], lim[1]),
+                                            y = c(lim[1], lim[2], lim[2])),
+                          ggplot2::aes(.data$x, .data$y), fill = "#d7d7d7", alpha = 0.55) +
+    ggplot2::geom_abline(slope = 1, intercept = 0, colour = rl_blue, linewidth = 0.8) +
+    ggplot2::geom_point(colour = rl_verm, size = 2.4, alpha = 0.75) +
+    { if (any(!is.na(d$lab)))
+        ggplot2::geom_text(ggplot2::aes(label = .data$lab), na.rm = TRUE,
+                           hjust = -0.15, size = 3, colour = rl_grey) } +
+    ggplot2::coord_equal(xlim = lim, ylim = lim, expand = FALSE) +
+    ggplot2::labs(
+      x = sprintf("this unit's ceiling (%s of its own reproduction)",
+                  if (index == "gini") "Gini" else "CV"),
+      y = sprintf("observed recruitment (%s)", if (index == "gini") "Gini" else "CV"),
+      subtitle = sprintf("One point per unit. The shaded region is unreachable by any delay.\n%d of the %d units are in it.",
+                         above, nrow(d))) +
+    rl_theme()
+}
+
+
+#' Several strip figures instead of one unreadable one
+#'
+#' [rain_strip()] is readable up to about a dozen series. With more units than
+#' that, `rain_strips()` splits them and returns one figure per group, either
+#' by a grouping you supply (tree species, transect, site) or in chunks of
+#' `size`. A group that is still too large is split further, and the figures
+#' are named so the caption can say which is which.
+#'
+#' @param x A `lag_ceiling_list` from [lag_ceiling_by()], or a named list of
+#'   `lag_ceiling` objects.
+#' @param group Optional grouping for the units: either a vector as long as
+#'   `x`, or a named vector or one-to-one lookup whose names are unit names.
+#'   Units whose group is missing are collected as "ungrouped".
+#' @param size Largest number of strips in one figure. Groups larger than this
+#'   are split into "... (1 of 3)" and so on.
+#' @param index `"gini"` or `"cv"`, passed to [rain_strip()].
+#' @param order_by `"exceedance"` (default), `"ceiling"`, `"observed"` or
+#'   `"name"`: how units are ordered within each figure.
+#' @return A named list of ggplots. Print them in a loop, one per figure.
+#'
+#' @examples
+#' ces <- lag_ceiling_by(lepanthes_hosts, unit = "host",
+#'                       reproduction = "inflorescences", K = 4,
+#'                       kernels = lag_kernels(4, bin = 6, unit = "mo"))
+#' figs <- rain_strips(ces, size = 8)
+#' names(figs)
+#' figs[[1]]
+#' @export
+rain_strips <- function(x, group = NULL, size = 10,
+                        index = c("gini", "cv"),
+                        order_by = c("exceedance", "ceiling", "observed", "name")) {
+  index <- match.arg(index); order_by <- match.arg(order_by)
+  if (!is.list(x) || !length(x)) rl_abort("`x` must be a non-empty list of lag_ceiling objects.")
+  bad <- !vapply(x, inherits, logical(1), "lag_ceiling")
+  if (any(bad))
+    rl_abort(sum(bad), " of the ", length(x), " elements are not lag_ceiling objects. ",
+             "Pass the result of lag_ceiling_by().")
+  if (is.null(names(x))) names(x) <- paste("unit", seq_along(x))
+  if (size < 1) rl_abort("`size` must be at least 1; it is ", size, ".")
+
+  g <- rep("all units", length(x))
+  if (!is.null(group)) {
+    if (length(group) == length(x) && is.null(names(group))) {
+      g <- as.character(group)
+    } else if (!is.null(names(group))) {
+      g <- unname(as.character(group)[match(names(x), names(group))])
+    } else {
+      rl_abort("`group` must be either a vector as long as x (", length(x),
+               " units), or a named vector whose names are the unit names. ",
+               "It has length ", length(group), " and no names.")
+    }
+    g[is.na(g) | g == ""] <- "ungrouped"
+  }
+
+  key <- switch(order_by,
+    exceedance = vapply(x, function(o) unname(o$obs[index] / o$theorem[index]), numeric(1)),
+    ceiling    = vapply(x, function(o) unname(o$theorem[index]), numeric(1)),
+    observed   = vapply(x, function(o) unname(o$obs[index]), numeric(1)),
+    name       = seq_along(x))
+  if (order_by != "name") key[!is.finite(key)] <- max(key[is.finite(key)], na.rm = TRUE) + 1
+
+  out <- list()
+  for (grp in unique(g)) {
+    idx <- which(g == grp)
+    idx <- idx[order(key[idx], decreasing = order_by != "name")]
+    chunks <- split(idx, ceiling(seq_along(idx) / size))
+    for (i in seq_along(chunks)) {
+      nm <- if (length(chunks) == 1) grp else sprintf("%s (%d of %d)", grp, i, length(chunks))
+      out[[nm]] <- rain_strip(x[chunks[[i]]], index = index) +
+        ggplot2::labs(title = nm)
+    }
+  }
+  out
 }

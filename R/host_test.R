@@ -88,13 +88,33 @@ expected_recruits <- function(R, X = NULL, w, lag0 = 1L, missing = c("backfill",
 }
 
 check_host_inputs <- function(R, X) {
-  stopifnot(is.matrix(R), is.matrix(X), !is.null(rownames(R)), !is.null(rownames(X)),
-            !is.null(colnames(R)))
+  if (!is.matrix(R) || !is.matrix(X))
+    rl_abort("R and X must both be matrices of units by periods, as built by ",
+             "host_matrices(). They are ", class(R)[1], " and ", class(X)[1], ". ",
+             "If you have a long data frame, pass it as R and name its columns.")
+  if (is.null(rownames(R)) || is.null(rownames(X)))
+    rl_abort("R and X need rownames: the unit identifiers, so that each unit's recruits ",
+             "are matched to its own reproduction.")
+  if (is.null(colnames(R)))
+    rl_abort("R needs colnames: the period index of each scored census, so the lag ",
+             "weights know how far back to reach.")
   cens <- as.integer(colnames(R))
-  if (any(is.na(cens))) stop("colnames(R) must be the census indices")
-  if (!setequal(rownames(R), rownames(X))) stop("R and X must have the same unit identifiers as rownames")
+  if (any(is.na(cens)))
+    rl_abort("The colnames of R must be the census indices as whole numbers. ",
+             "These could not be read as numbers: ",
+             rl_list(colnames(R)[is.na(cens)]), ".")
+  if (!setequal(rownames(R), rownames(X))) {
+    only_r <- setdiff(rownames(R), rownames(X)); only_x <- setdiff(rownames(X), rownames(R))
+    rl_abort("R and X describe different sets of units. ",
+             if (length(only_r)) paste0(length(only_r), " in R but not in X: ", rl_list(only_r), ". ") else "",
+             if (length(only_x)) paste0(length(only_x), " in X but not in R: ", rl_list(only_x), ". ") else "",
+             "Both matrices must cover the same units, in any order.")
+  }
   X <- X[rownames(R), , drop = FALSE]
-  if (max(cens) > ncol(X)) stop("R scores a census beyond the last column of X")
+  if (max(cens) > ncol(X))
+    rl_abort("R scores recruits at census ", max(cens), ", but the reproductive record X ",
+             "only reaches census ", ncol(X), ". X must cover every period from the first ",
+             "to the last census at which recruits were scored.")
   list(cens = cens, X = X)
 }
 
@@ -276,7 +296,7 @@ host_lag_test <- function(R, X = NULL, K, lag0 = 1L,
   missing <- match.arg(missing)
   if (is.data.frame(R)) { hm <- host_matrices(R, unit, period, reproduction, recruits); R <- hm$R; X <- hm$X }
   chk <- check_host_inputs(R, X); X <- chk$X
-  stopifnot(inherits(kernels, "lag_kernels"), attr(kernels, "K") == K)
+  rl_check_kernels(kernels, K)
   Tn <- ncol(R); tot <- colSums(R)
   obs <- c(silent = sum(tot == 0), gini = rain_gini(tot), cv = rain_cv(tot), max = max(tot))
   sim_stats <- function(mu, ph) {
@@ -291,7 +311,10 @@ host_lag_test <- function(R, X = NULL, K, lag0 = 1L,
       median_silent = stats::median(z))
   }
   phis <- if (identical(phi, "moment")) list(moment = NA) else {
-    stopifnot(is.numeric(phi)); c(list(moment = NA), stats::setNames(as.list(phi), paste0("fixed ", phi))) }
+    if (!is.numeric(phi))
+      rl_abort('`phi` must be "moment", or a numeric vector of fixed clumping values to ',
+               "evaluate as a stress test. It is ", class(phi)[1], ".")
+    c(list(moment = NA), stats::setNames(as.list(phi), paste0("fixed ", phi))) }
   one <- function(label, family, mu) {
     ph_m <- phi_moment(R, mu)
     do.call(rbind, lapply(names(phis), function(src) {

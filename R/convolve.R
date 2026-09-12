@@ -56,6 +56,18 @@
 #' @export
 convolve_lag <- function(X, w, t_R = NULL, lag0 = 1L, missing = c("backfill", "drop")) {
   missing <- match.arg(missing)
+  if (!is.numeric(X) || !length(X))
+    rl_abort("X must be a non-empty numeric vector: the reproductive record at periods ",
+             "1, 2, ... It is ", class(X)[1], " of length ", length(X), ".")
+  if (!is.numeric(w) || !length(w))
+    rl_abort("w must be a numeric vector of lag weights, one per bin. It is ",
+             class(w)[1], " of length ", length(w), ".")
+  if (anyNA(w) || any(w < 0))
+    rl_abort("The lag weights w must all be non-negative and present. ",
+             "Given: ", rl_list(format(w)), ".")
+  if (sum(w) == 0)
+    rl_abort("The lag weights w sum to zero, so there is no profile to apply. ",
+             "At least one bin must carry weight.")
   X <- as.numeric(X); w <- as.numeric(w); w <- w / sum(w)
   K <- length(w) - 1L
   if (is.null(t_R)) t_R <- seq.int(lag0 + K + 1L, length(X))

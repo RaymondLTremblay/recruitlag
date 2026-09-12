@@ -55,11 +55,15 @@ bound, but how far above the bound each unit sits and how much that varies
 within a study.
 }
 \details{
-Each unit's periods are re-indexed to start at 1 before its
-ceiling is computed, so that a unit watched from 2015 to 2021 is treated
-as a seven-period record rather than as a 22-period record with fifteen
-silent years in front of it. Units are otherwise independent: nothing is
-pooled, and the kernels are the same for all of them.
+Rows in which both reproduction and recruits are missing are
+taken as periods in which that unit was not watched, and are dropped
+before its periods are re-indexed to start at 1. A unit followed from
+2015 to 2021 is therefore a seven-period record, not a 22-period record
+with fifteen silent years in front of it. Keeping them would read those
+years as periods with no reproduction, which raises the unit's ceiling
+and makes the test look weaker than it is. Units are otherwise
+independent: nothing is pooled, and the kernels are the same for all of
+them.
 }
 \section{Scale and how to read it}{
 

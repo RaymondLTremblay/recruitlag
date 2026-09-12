@@ -20,9 +20,7 @@
 host_matrices <- function(data, unit = "unit", period = "period",
                           reproduction = "reproduction", recruits = "recruits") {
   data <- as.data.frame(data)
-  need <- c(unit, period, reproduction, recruits)
-  miss <- setdiff(need, names(data))
-  if (length(miss)) stop("column(s) not found in data: ", paste(miss, collapse = ", "))
+  rl_check_long(data, period, reproduction, recruits, unit = unit, what = "host_matrices()")
   u <- as.character(data[[unit]]); p <- as.integer(data[[period]])
   units <- unique(u); periods <- seq_len(max(p))
   X <- matrix(0, length(units), length(periods), dimnames = list(units, periods))
@@ -30,7 +28,8 @@ host_matrices <- function(data, unit = "unit", period = "period",
   Rfull <- matrix(NA_real_, length(units), length(periods), dimnames = list(units, periods))
   Rfull[cbind(match(u, units), p)] <- data[[recruits]]
   scored <- which(colSums(!is.na(Rfull)) > 0)
-  if (!length(scored)) stop("no period has a non-missing recruit count")
+  if (!length(scored))
+    rl_abort('No period has a recruit count: "', recruits, '" is NA in every row.')
   R <- Rfull[, scored, drop = FALSE]
   R[is.na(R)] <- 0
   list(R = R, X = X)
@@ -52,8 +51,7 @@ host_matrices <- function(data, unit = "unit", period = "period",
 series_from <- function(data, period = "period", reproduction = "reproduction",
                         recruits = "recruits") {
   data <- as.data.frame(data)
-  miss <- setdiff(c(period, reproduction, recruits), names(data))
-  if (length(miss)) stop("column(s) not found in data: ", paste(miss, collapse = ", "))
+  rl_check_long(data, period, reproduction, recruits, what = "series_from()")
   p <- as.integer(data[[period]]); periods <- seq_len(max(p))
   X <- tapply(ifelse(is.na(data[[reproduction]]), 0, data[[reproduction]]), factor(p, periods), sum)
   X[is.na(X)] <- 0
