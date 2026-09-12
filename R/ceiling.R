@@ -122,6 +122,9 @@ lag_ceiling <- function(X, R = NULL, t_R = NULL, K, lag0 = 1L,
   search <- tibble::tibble(label = vapply(kernels, function(k) k$label, character(1)),
                            family = vapply(kernels, function(k) k$family, character(1)),
                            gini = res[1, ], cv = res[2, ])
+  if (all(is.na(search$gini)))
+    stop("every kernel gives an all-zero expected series: the reproductive record is ",
+         "zero at every lagged period used. There is no ceiling to compute for this unit.")
   ib <- which.max(search$gini)
   structure(list(
     obs = c(gini = rain_gini(R), cv = rain_cv(R)),

@@ -86,7 +86,9 @@ rain_strip <- function(..., index = c("gini", "cv")) {
     # is the main use.
     ggplot2::geom_text(ggplot2::aes(x = .data$observed + ifelse(.data$observed > 0.8 * xmax, -1, 1) * 0.02 * xmax,
                                     y = as.numeric(.data$strip),
-                                    label = sprintf("%.2f (%.1fx)", .data$observed, .data$exceedance),
+                                    label = ifelse(is.finite(.data$exceedance),
+                                                   sprintf("%.2f (%.1fx)", .data$observed, .data$exceedance),
+                                                   sprintf("%.2f (ceiling 0)", .data$observed)),
                                     hjust = ifelse(.data$observed > 0.8 * xmax, 1, 0)),
                        colour = rl_verm, size = 3.2) +
     ggplot2::scale_y_continuous(breaks = seq_along(levels(d$strip)), labels = levels(d$strip),

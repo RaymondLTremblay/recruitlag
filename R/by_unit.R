@@ -85,8 +85,11 @@ lag_ceiling_by <- function(data, unit = "unit", period = "period",
       skipped[nm] <- sprintf("%g recruits, fewer than min_recruits = %g", nrec, min_recruits); next
     }
     s[[period]] <- as.integer(s[[period]]) - min(as.integer(s[[period]])) + 1L
-    out[[nm]] <- lag_ceiling(s, K = K, lag0 = lag0, kernels = kernels, missing = missing,
-                             period = period, reproduction = reproduction, recruits = recruits)
+    ce <- tryCatch(lag_ceiling(s, K = K, lag0 = lag0, kernels = kernels, missing = missing,
+                               period = period, reproduction = reproduction, recruits = recruits),
+                   error = function(e) e)
+    if (inherits(ce, "error")) { skipped[nm] <- conditionMessage(ce); next }
+    out[[nm]] <- ce
   }
   if (!length(out)) stop("no unit met min_periods and min_recruits")
   structure(out, class = "lag_ceiling_list", skipped = skipped)
