@@ -32,6 +32,67 @@
 #'   kernel, each a list with `label`, `family` and `w`. `as.matrix()` returns
 #'   the weights as a matrix with one row per kernel.
 #'
+#' @section Scale and how to read it:
+#'
+#' **The weights.** Every kernel is a probability vector: `K + 1`
+#' non-negative weights summing to 1. The weights say how memory is
+#' distributed over the horizon, never how much recruitment there is; the
+#' scale is carried elsewhere and never enters the ceiling.
+#'
+#' **`K`, the horizon, in bins and in time.** A kernel covers `K + 1` bins,
+#' so with `bin` months per bin the horizon reaches `bin * (K + 1)` months
+#' back from the first lagged bin. The paper's `K = 4` with `bin = 6` and
+#' `lag0 = 1` searches 6 to 30 months before the recruit census. Nothing
+#' outside the horizon is tested, so a delay longer than `bin * (K + 1)` is
+#' not refuted by a small verdict: state the horizon whenever the result is
+#' reported.
+#'
+#' **`alpha`, the Dirichlet shape.** This is the only parameter here with a
+#' scale that is easy to misread. It is the shape of a symmetric Dirichlet
+#' on the simplex of weights:
+#' \itemize{
+#'   \item `alpha < 1` (the default 0.3) pushes draws toward the vertices, so
+#'     most random kernels are sparse and close to pure delays. This is the
+#'     useful setting, because concentrated kernels are the ones that
+#'     approach the ceiling.
+#'   \item `alpha = 1` is uniform on the simplex.
+#'   \item `alpha > 1` pushes draws toward the centre, giving flat profiles,
+#'     which searches the least concentrated corner of the family and will
+#'     understate the ceiling.
+#' }
+#' The construction of a Dirichlet simplex over lag weights follows Ogle et
+#' al. (2015), where it is a prior; here the same object is a search grid and
+#' nothing is fitted.
+#'
+#' **`rho`, the geometric decay rates.** Weight `k` is proportional to
+#' \eqn{\rho^k}{rho^k}, so `rho` near 0 concentrates on the first bin and `rho` near
+#' 1 approaches equal weights. This is the Koyck (1954) form, the shape
+#' assumed whenever memory is taken to fade at a constant rate per period.
+#'
+#' **How many kernels you get.** The delay family contributes `K + 1`, the
+#' window family every contiguous width and start (`windows = "all"`) or only
+#' those anchored at the first bin, the geometric family one per `rho`, and
+#' the Dirichlet family `n_dirichlet`. Print the object to see the total.
+#' More kernels can only raise the searched ceiling and so can only make the
+#' test more conservative.
+#'
+#' @references
+#' Gasparrini, A. (2014) Modeling exposure-lag-response associations with
+#' distributed lag non-linear models. *Statistics in Medicine* 33: 881-899.
+#' \doi{10.1002/sim.5963}
+#'
+#' Koyck, L. M. (1954) *Distributed Lags and Investment Analysis*.
+#' North-Holland, Amsterdam.
+#'
+#' Ogle, K., Barber, J. J., Barron-Gafford, G. A., Bentley, L. P., Young,
+#' J. M., Huxman, T. E., Loik, M. E. and Tissue, D. T. (2015) Quantifying
+#' ecological memory in plant and ecosystem processes. *Ecology Letters* 18:
+#' 221-235. \doi{10.1111/ele.12399}
+#'
+#' van de Pol, M. and Cockburn, A. (2011) Identifying the critical climatic
+#' time window that affects trait expression. *The American Naturalist* 177:
+#' 698-707. \doi{10.1086/659101}
+#'
 #' @examples
 #' k <- lag_kernels(4, bin = 6, unit = "mo")
 #' k
@@ -103,8 +164,36 @@ as.matrix.lag_kernels <- function(x, ...) {
 #' a near-constant expected recruitment series.
 #' @param K Lag horizon, as in [lag_kernels()].
 #' @return A numeric vector of `K + 1` equal weights.
+#'
+#' @section Scale and how to read it:
+#'
+#' Each weight is \eqn{1/(K+1)}, so `flat_kernel(4)` is five weights of 0.2
+#' and the horizon is covered evenly. It is one end of the range that
+#' [lag_kernels()] searches: the flat kernel gives the least concentrated
+#' expected series available, a pure delay the most concentrated, and every
+#' other profile lies between.
+#'
+#' **It is not a null of "no lag".** The flat kernel is the lag hypothesis
+#' with memory spread evenly over the whole horizon, which is a strong
+#' biological claim in its own right (seed from every one of the last `K + 1`
+#' bins contributing equally). The projection-matrix null, recruitment set by
+#' the immediately preceding interval alone, is the opposite extreme,
+#' `c(1, 0, 0, 0, 0)`.
+#'
+#' **Do not confuse it with the flat reference of [host_lag_test()].** The
+#' `flat = TRUE` row of that function spreads each unit's recruit total
+#' evenly over the censuses, which is a statement about recruitment. The flat
+#' kernel spreads the weights evenly over lags, which is a statement about
+#' reproduction's memory. Where reproduction is close to constant the two
+#' give nearly the same expected series, and that near-coincidence is itself
+#' the second diagnosis of the companion paper.
+#'
 #' @examples
 #' flat_kernel(4)
 #' sum(flat_kernel(4))
+#' # the two extremes of the searched family, on the same record
+#' X <- lepanthes_census$inflorescences
+#' convolve_lag(X, flat_kernel(4), t_R = 3:12)      # least concentrated
+#' convolve_lag(X, c(0, 0, 0, 0, 1), t_R = 3:12)    # a pure delay, most concentrated
 #' @export
 flat_kernel <- function(K) rep(1 / (K + 1), K + 1)

@@ -17,7 +17,36 @@ A convenience for the limiting case in which reproduction contributes
 equally at every lag, which for a near-constant reproductive record gives
 a near-constant expected recruitment series.
 }
+\section{Scale and how to read it}{
+
+
+Each weight is \eqn{1/(K+1)}, so \code{flat_kernel(4)} is five weights of 0.2
+and the horizon is covered evenly. It is one end of the range that
+\code{\link[=lag_kernels]{lag_kernels()}} searches: the flat kernel gives the least concentrated
+expected series available, a pure delay the most concentrated, and every
+other profile lies between.
+
+\strong{It is not a null of "no lag".} The flat kernel is the lag hypothesis
+with memory spread evenly over the whole horizon, which is a strong
+biological claim in its own right (seed from every one of the last \code{K + 1}
+bins contributing equally). The projection-matrix null, recruitment set by
+the immediately preceding interval alone, is the opposite extreme,
+\code{c(1, 0, 0, 0, 0)}.
+
+\strong{Do not confuse it with the flat reference of \code{\link[=host_lag_test]{host_lag_test()}}.} The
+\code{flat = TRUE} row of that function spreads each unit's recruit total
+evenly over the censuses, which is a statement about recruitment. The flat
+kernel spreads the weights evenly over lags, which is a statement about
+reproduction's memory. Where reproduction is close to constant the two
+give nearly the same expected series, and that near-coincidence is itself
+the second diagnosis of the companion paper.
+}
+
 \examples{
 flat_kernel(4)
 sum(flat_kernel(4))
+# the two extremes of the searched family, on the same record
+X <- lepanthes_census$inflorescences
+convolve_lag(X, flat_kernel(4), t_R = 3:12)      # least concentrated
+convolve_lag(X, c(0, 0, 0, 0, 1), t_R = 3:12)    # a pure delay, most concentrated
 }

@@ -187,6 +187,28 @@ as_profile_list <- function(profiles) {
 #' @param statistic For `host_lag_test`: which probability to plot.
 #' @param ... Ignored.
 #' @return A ggplot.
+#'
+#' @section Scale and how to read it:
+#'
+#' For a `host_lag_test` the vertical axis is a probability on a log scale,
+#' floored at \eqn{1/\mathrm{nsim}}{1/nsim} because no simulation can resolve below
+#' that. Points sitting on the floor mean "smaller than
+#' \eqn{1/\mathrm{nsim}}{1/nsim}", not zero. Two horizontal lines are drawn: the
+#' dashed line is the flat reference, which is the comparison that matters,
+#' and the dotted line at 0.05 is a conventional reference mark and not a
+#' decision rule (Wasserstein and Lazar 2016). Read the plot as the spread of
+#' the whole kernel family, since the verdict is the highest point on it.
+#'
+#' For a `ceiling_calibration` the axis is the Gini of simulated count
+#' series, with the observed value and the ceiling on the mean marked. The
+#' distance between those two marks is the question the plot answers: how
+#' much of the gap between the ceiling and the observation is explained by
+#' counting alone.
+#'
+#' @references
+#' Wasserstein, R. L. and Lazar, N. A. (2016) The ASA statement on p-values:
+#' context, process, and purpose. *The American Statistician* 70: 129-133.
+#' \doi{10.1080/00031305.2016.1154108}
 #' @examples
 #' ce <- lag_ceiling(lepanthes_census, reproduction = "inflorescences", K = 4,
 #'                   kernels = lag_kernels(4, bin = 6, unit = "mo"))

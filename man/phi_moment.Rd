@@ -11,10 +11,14 @@ phi_moment(R, mu, cap = 1e+06)
 
 \item{mu}{Matrix of expected counts, as returned by \code{\link[=expected_recruits]{expected_recruits()}}.}
 
-\item{cap}{Upper limit returned when the counts show no overdispersion.}
+\item{cap}{Upper limit returned when the counts show no overdispersion,
+that is, when the observed mean squared deviation does not exceed the
+mean and the moment estimator would be negative or undefined. The
+default 1e6 is an effectively Poisson value and is a sentinel, not an
+estimate: treat a returned \code{cap} as "no overdispersion detected".}
 }
 \value{
-A single number.
+A single number on the scale described below.
 }
 \description{
 With expected counts that vary by unit and census, the clumping parameter
@@ -24,8 +28,59 @@ recruited at least once. Estimating \code{phi} about a single pooled mean
 instead attributes the between-unit spread of the means to clumping and
 roughly halves \code{phi}.
 }
+\section{Scale and how to read it}{
+
+
+\code{phi} is the size (or clumping) parameter of the negative binomial, \code{k} in
+the ecological literature, entering the variance as
+\eqn{\mathrm{Var}(R) = \mu + \mu^2 / \phi}{Var(R) = mu + mu^2 / phi}. Read \eqn{1/\phi}{1/phi} rather than
+\eqn{\phi}{phi}: it is the excess variance per unit of squared mean.
+
+\itemize{
+\item \eqn{\phi \to \infty}{phi -> infinity} (\eqn{1/\phi = 0}): no clumping, the counts
+are Poisson about their mean. This is the value \code{cap} stands in for.
+\item \eqn{\phi = 1}: variance \eqn{\mu + \mu^2}, strong clumping.
+\item \eqn{\phi < 1}: heavier still. The \emph{Lepanthes eltoroensis} host
+matrices give \eqn{\phi = 0.19} under the heterogeneous mean, so at a
+mean of 1 recruit the variance is about 6.
+\item \eqn{\phi \le 0} is not returned: the estimator is capped instead.
+}
+
+Smaller \code{phi} makes the null more permissive, because clumped counts are
+themselves episodic. A test run at a small \code{phi} is therefore the
+conservative one, which is why \code{\link[=host_lag_test]{host_lag_test()}} accepts a vector of fixed
+values as a stress test.
+
+\strong{No threshold, and no comparison across data sets.} The package supplies
+no value of \code{phi} above which a record counts as aggregated. \code{phi} is also
+not a fixed constant of a species or a system: it is density dependent
+(Taylor, Woiwod and Perry 1979), so two estimates are comparable only at
+comparable means. Report it with the mean it was estimated at, as
+\code{\link[=host_lag_test]{host_lag_test()}} does.
+
+\strong{Which mean it is estimated about matters.} Estimating \code{phi} about a
+single pooled mean, rather than about the unit-by-census means of
+\code{\link[=expected_recruits]{expected_recruits()}}, attributes the between-unit spread of the means to
+clumping and roughly halves the estimate. In the companion paper the
+single-mean value was 0.089 against the moment value 0.19 under the
+heterogeneous mean.
+}
+
 \examples{
 m <- host_matrices(lepanthes_hosts, unit = "host", reproduction = "inflorescences")
 mu <- expected_recruits(m$R, m$X, w = flat_kernel(4))
 phi_moment(m$R, mu)
+}
+\references{
+Anscombe, F. J. (1949) The statistical analysis of insect counts based on
+the negative binomial distribution. \emph{Biometrics} 5: 165-173.
+\doi{10.2307/3001918}
+
+Bliss, C. I. and Fisher, R. A. (1953) Fitting the negative binomial
+distribution to biological data. \emph{Biometrics} 9: 176-200.
+\doi{10.2307/3001850}
+
+Taylor, L. R., Woiwod, I. P. and Perry, J. N. (1979) The negative binomial
+as a dynamic ecological model for aggregation, and the density dependence
+of k. \emph{Journal of Animal Ecology} 48: 289-304. \doi{10.2307/4114}
 }

@@ -85,8 +85,58 @@ unit recruited; \code{gini} and \code{cv}, the concentration of the census total
 statistics of the companion paper; the silent-census count is the most
 interpretable and the largest census the least sensitive.
 }
+\section{Scale and how to read it}{
+
+
+\strong{The probabilities.} \code{p_silent}, \code{p_gini}, \code{p_cv} and \code{p_max} are
+proportions in [0, 1]: the fraction of \code{nsim} simulated records, drawn
+under the profile in that row, that are at least as extreme as the
+observed one on that statistic. They are predictive probabilities in the
+sense of Gelman, Meng and Stern (1996), computed under a fully specified
+null with nothing fitted. A value near 0.5 means the observed record is an
+ordinary draw under that profile. A value near 0 means it is not.
+
+\strong{The resolution floor.} A probability cannot be resolved below
+\eqn{1/\mathrm{nsim}}{1/nsim}. With the default \code{nsim = 10000} a reported 0.0000
+means "smaller than 1e-4", not zero, and the difference between 0.0000 and
+0.0002 is one simulated record. Raise \code{nsim} before reading anything into
+a very small value, and note that \code{\link[=plot.host_lag_test]{plot.host_lag_test()}} floors the axis
+at \eqn{1/\mathrm{nsim}}{1/nsim} for the same reason.
+
+\strong{The verdict is a maximum, not an average.} \code{verdict} takes, for each
+statistic, the largest probability over every profile and every \code{phi}
+setting, together with the profile attaining it. It is therefore the best
+case the lag hypothesis can make for itself over the whole family
+searched. A small verdict says that no profile in the family, not merely
+the fitted one, reproduces the record.
+
+\strong{No threshold.} The package applies no cutoff to these probabilities and
+reports them as numbers. The 0.05 line drawn by \code{\link[=plot.host_lag_test]{plot.host_lag_test()}} is
+a conventional reference mark and not a decision rule; a bright-line
+threshold is exactly what the ASA statement on p-values advises against
+(Wasserstein and Lazar 2016). What the companion paper reports is the
+magnitude (a verdict of 0.0007 at the moment \code{phi}, 0.048 at a \code{phi} fixed
+three times lower) and leaves the reader the judgement.
+
+\strong{Where the test is weak.} The probabilities rise, correctly, when
+reproduction is seasonal, because a concentrated input can produce a
+concentrated output and the ceiling is then high. An ordinary verdict is
+therefore not evidence for a lag; it is the absence of evidence against
+one. See the \code{invented-regimes} vignette, which shows both outcomes on
+constructed records whose mechanism is known.
+}
+
 \examples{
 ht <- host_lag_test(lepanthes_hosts, unit = "host", reproduction = "inflorescences",
                     K = 4, nsim = 500, kernels = lag_kernels(4, bin = 6, unit = "mo"))
 ht
+}
+\references{
+Gelman, A., Meng, X.-L. and Stern, H. (1996) Posterior predictive
+assessment of model fitness via realized discrepancies. \emph{Statistica
+Sinica} 6: 733-760.
+
+Wasserstein, R. L. and Lazar, N. A. (2016) The ASA statement on p-values:
+context, process, and purpose. \emph{The American Statistician} 70: 129-133.
+\doi{10.1080/00031305.2016.1154108}
 }

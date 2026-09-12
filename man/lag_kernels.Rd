@@ -59,8 +59,71 @@ non-negative weights summing to one; weight \code{k + 1} applies to the
 reproductive record \code{k} bins before the first lagged bin (see
 \code{\link[=convolve_lag]{convolve_lag()}} for the census convention).
 }
+\section{Scale and how to read it}{
+
+
+\strong{The weights.} Every kernel is a probability vector: \code{K + 1}
+non-negative weights summing to 1. The weights say how memory is
+distributed over the horizon, never how much recruitment there is; the
+scale is carried elsewhere and never enters the ceiling.
+
+\strong{\code{K}, the horizon, in bins and in time.} A kernel covers \code{K + 1} bins,
+so with \code{bin} months per bin the horizon reaches \code{bin * (K + 1)} months
+back from the first lagged bin. The paper's \code{K = 4} with \code{bin = 6} and
+\code{lag0 = 1} searches 6 to 30 months before the recruit census. Nothing
+outside the horizon is tested, so a delay longer than \code{bin * (K + 1)} is
+not refuted by a small verdict: state the horizon whenever the result is
+reported.
+
+\strong{\code{alpha}, the Dirichlet shape.} This is the only parameter here with a
+scale that is easy to misread. It is the shape of a symmetric Dirichlet
+on the simplex of weights:
+\itemize{
+\item \code{alpha < 1} (the default 0.3) pushes draws toward the vertices, so
+most random kernels are sparse and close to pure delays. This is the
+useful setting, because concentrated kernels are the ones that
+approach the ceiling.
+\item \code{alpha = 1} is uniform on the simplex.
+\item \code{alpha > 1} pushes draws toward the centre, giving flat profiles,
+which searches the least concentrated corner of the family and will
+understate the ceiling.
+}
+The construction of a Dirichlet simplex over lag weights follows Ogle et
+al. (2015), where it is a prior; here the same object is a search grid and
+nothing is fitted.
+
+\strong{\code{rho}, the geometric decay rates.} Weight \code{k} is proportional to
+\eqn{\rho^k}{rho^k}, so \code{rho} near 0 concentrates on the first bin and \code{rho} near
+1 approaches equal weights. This is the Koyck (1954) form, the shape
+assumed whenever memory is taken to fade at a constant rate per period.
+
+\strong{How many kernels you get.} The delay family contributes \code{K + 1}, the
+window family every contiguous width and start (\code{windows = "all"}) or only
+those anchored at the first bin, the geometric family one per \code{rho}, and
+the Dirichlet family \code{n_dirichlet}. Print the object to see the total.
+More kernels can only raise the searched ceiling and so can only make the
+test more conservative.
+}
+
 \examples{
 k <- lag_kernels(4, bin = 6, unit = "mo")
 k
 as.matrix(k)[1:3, ]
+}
+\references{
+Gasparrini, A. (2014) Modeling exposure-lag-response associations with
+distributed lag non-linear models. \emph{Statistics in Medicine} 33: 881-899.
+\doi{10.1002/sim.5963}
+
+Koyck, L. M. (1954) \emph{Distributed Lags and Investment Analysis}.
+North-Holland, Amsterdam.
+
+Ogle, K., Barber, J. J., Barron-Gafford, G. A., Bentley, L. P., Young,
+J. M., Huxman, T. E., Loik, M. E. and Tissue, D. T. (2015) Quantifying
+ecological memory in plant and ecosystem processes. \emph{Ecology Letters} 18:
+221-235. \doi{10.1111/ele.12399}
+
+van de Pol, M. and Cockburn, A. (2011) Identifying the critical climatic
+time window that affects trait expression. \emph{The American Naturalist} 177:
+698-707. \doi{10.1086/659101}
 }

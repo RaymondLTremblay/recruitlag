@@ -53,6 +53,32 @@ that unit's own lagged reproduction, weighted by the lag profile and scaled
 so that the unit's expected total equals its observed total. Nothing is
 fitted; the profile fixes the shape and the observed totals fix the scale.
 }
+\section{Scale and how to read it}{
+
+
+The returned values are expected counts on the scale of \code{R}, and each
+row sums to that unit's observed recruit total. That is the whole of the
+scaling: no rate, no offset and no fitted coefficient. Two consequences
+follow and are worth keeping in mind when reading the output.
+
+First, the test built on this expectation is about \strong{timing only}. How
+many recruits a unit received is taken from the data and is never
+predicted, so a unit that recruited heavily cannot make the lag hypothesis
+look good or bad by its total, only by when those recruits arrived.
+
+Second, a unit that never recruited has an all-zero row and contributes
+nothing at all, so the effective replication is the number of units with
+at least one recruit and not \code{nrow(R)}. In the \emph{Lepanthes eltoroensis}
+host matrices that is 17 of the 23 trees, although
+\code{\link[=host_lag_test]{host_lag_test()}} prints all 23. \code{sum(rowSums(R) > 0)} gives the number
+that actually carries the test, and it is the same set \code{\link[=phi_moment]{phi_moment()}}
+estimates clumping over.
+
+A unit with recruits but no lagged reproduction on record is given a flat
+row rather than being dropped, because dropping it would quietly remove
+the units least favourable to the lag hypothesis.
+}
+
 \examples{
 mu <- expected_recruits(lepanthes_hosts, unit = "host",
                         reproduction = "inflorescences", w = flat_kernel(4))

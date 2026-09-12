@@ -8,6 +8,45 @@
 \description{
 Tests whether an episodic recruitment record can be the delayed consequence of a reproductive record, under any distributed lag. A delay is a convolution, and a convolution is a weighted average, so the concentration in time of expected recruitment can never exceed that of reproduction: reproduction's own concentration is a ceiling. The package computes that ceiling by searching families of lag weights (pure delays, windows, geometric decay and Dirichlet draws), calibrates the pooled comparison against negative-binomial counts to show what it can and cannot refute, and runs the host-level (replicate-unit) test in which the null is the lag hypothesis exactly as it is asserted: expected recruitment on each unit is that unit's own lagged reproduction, scaled to its own total. Plotting functions draw the ceiling strip, the lag profiles against the observed counts, and the calibration. The census data on the epiphytic orchid Lepanthes eltoroensis analysed in the companion paper are included.
 }
+\section{Reading the numbers}{
+
+
+Every quantity the package reports is listed here with its range and the
+direction that means "more episodic". Each function's help page carries
+the full account under "Scale and how to read it".
+
+\tabular{lll}{
+\strong{Quantity (function)} \tab \strong{Range} \tab \strong{Reading} \cr
+\code{gini} (\code{\link[=gini]{gini()}}) \tab 0 to \eqn{(n-1)/n} \tab 0 is even; the maximum is reached when one period holds the whole total. The maximum depends on the number of periods, so compare only series of equal length. \cr
+\code{cv} (\code{\link[=cv]{cv()}}) \tab 0 to \eqn{\sqrt{n}}{sqrt(n)} \tab As for \code{gini}, computed with the \code{n - 1} divisor of \code{\link[stats:sd]{stats::sd()}}. \cr
+\code{zeros} (\code{\link[=concentration]{concentration()}}) \tab 0 to \code{n} \tab Periods with no count at all. \cr
+\code{max_share} (\code{\link[=concentration]{concentration()}}) \tab \eqn{1/n} to 1 \tab Share of the total falling in the largest single period. \cr
+weights \code{w} (\code{\link[=lag_kernels]{lag_kernels()}}) \tab sum to 1 \tab How memory is spread over the horizon, never how much recruitment there is. \cr
+\code{alpha} (\code{\link[=lag_kernels]{lag_kernels()}}) \tab above 0 \tab Below 1 gives sparse kernels close to pure delays; 1 is uniform on the simplex; above 1 gives flat kernels. \cr
+\code{rho} (\code{\link[=lag_kernels]{lag_kernels()}}) \tab 0 to 1 \tab Geometric decay. Near 0 puts all weight on the first bin, near 1 approaches equal weights. \cr
+\code{theorem}, \code{ceiling} (\code{\link[=lag_ceiling]{lag_ceiling()}}) \tab as \code{gini} and \code{cv} \tab Reproduction's own concentration, which no delay can exceed. \cr
+\code{exceedance} (\code{\link[=lag_ceiling]{lag_ceiling()}}) \tab above 0, centred on 1 \tab 1 is exactly at the bound; above 1 is more concentrated than any delay predicts. A description of the gap, not a test. \cr
+\code{vmr} (\code{\link[=ceiling_calibration]{ceiling_calibration()}}) \tab above 1 \tab 1 is Poisson and larger is more clumped. Below 1 the negative binomial does not exist. \cr
+\code{phi} (\code{\link[=phi_moment]{phi_moment()}}) \tab above 0 \tab Variance is \eqn{\mu + \mu^2/\phi}{mu + mu^2/phi}. Small is strongly clumped and very large is Poisson. Density dependent, so not comparable across means. \cr
+\code{p_gini}, \code{p_cv}, \code{p_zeros} (\code{\link[=ceiling_calibration]{ceiling_calibration()}}) \tab 0 to 1 \tab Fraction of simulated series at least as extreme as the observed one. Near 0.5 is ordinary. \cr
+\code{p_silent}, \code{p_gini}, \code{p_cv}, \code{p_max}, \code{verdict} (\code{\link[=host_lag_test]{host_lag_test()}}) \tab 1/nsim to 1 \tab As above, with the verdict the maximum over profiles, that is, the best case the lag hypothesis can make for itself. Nothing below 1/nsim can be resolved. \cr
+}
+
+\strong{The package applies no thresholds.} There is no Gini above which a
+record is declared episodic, no \code{phi} above which counts are declared
+clumped, and no probability below which a delay is declared refuted. The
+functions return numbers. A bright-line cutoff on the probabilities is
+what the ASA statement on p-values advises against (Wasserstein and Lazar
+2016), and for the concentration indices no cutoff is taken from the
+literature, because the level of an index carries no verdict on its own:
+the inference lives in the comparison between series of equal length.
+}
+
+\references{
+Wasserstein, R. L. and Lazar, N. A. (2016) The ASA statement on p-values:
+context, process, and purpose. \emph{The American Statistician} 70: 129-133.
+\doi{10.1080/00031305.2016.1154108}
+}
 \seealso{
 Useful links:
 \itemize{

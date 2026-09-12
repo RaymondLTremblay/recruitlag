@@ -23,6 +23,32 @@
 #'
 #' @return A numeric vector of the same length as `t_R`.
 #'
+#' @section Scale and how to read it:
+#'
+#' The output is on the scale of `X` and in its units, because the weights
+#' are renormalised to sum to 1 and the result is a weighted average: every
+#' value lies between the smallest and the largest `X` in its own window.
+#' Nothing is multiplied by a rate or a recruitment probability, so the
+#' output is not a predicted number of recruits. It is the shape of the
+#' expected recruitment series, up to an unknown scale, which is all the
+#' ceiling argument needs and all that [lag_ceiling()] uses.
+#'
+#' Two consequences are worth stating because they are where the intuition
+#' usually slips. Averaging cannot sharpen: the output can never be more
+#' concentrated in time than `X` itself, whatever the weights, and it equals
+#' `X`'s concentration only for a pure delay, which permutes the series
+#' rather than mixing it. And averaging a nearly constant `X` gives a nearly
+#' constant output for every set of weights, which is why a flat reproductive
+#' record cannot identify a lag profile. Slutzky (1937) is the classical
+#' statement of what a moving average does to a series.
+#'
+#' @references
+#' Koyck, L. M. (1954) *Distributed Lags and Investment Analysis*.
+#' North-Holland, Amsterdam.
+#'
+#' Slutzky, E. (1937) The summation of random causes as the source of cyclic
+#' processes. *Econometrica* 5: 105-146. \doi{10.2307/1907241}
+#'
 #' @examples
 #' X <- lepanthes_census$inflorescences
 #' # a pure 24 to 30 month delay, five six-month bins, recruits scored at censuses 3 to 12

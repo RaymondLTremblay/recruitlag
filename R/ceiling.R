@@ -40,6 +40,57 @@
 #'   counts, which [ceiling_calibration()] evaluates for the pooled series and
 #'   [host_lag_test()] evaluates across replicate units.
 #'
+#' @section Scale and how to read it:
+#'
+#' **`theorem`, `ceiling` and `obs`** are concentration indices, so they
+#' carry the scale of [gini()] and [cv()]: 0 for an even series, rising with
+#' concentration, with a maximum of \eqn{(n-1)/n} and \eqn{\sqrt{n}}{sqrt(n)}
+#' respectively that depends on the number of scored periods. `theorem` is
+#' the bound derived from the reproductive series itself; `ceiling` is the
+#' largest value actually attained by any kernel searched, on exactly the
+#' periods at which recruits were scored.
+#'
+#' **`exceedance` is a ratio, observed over searched ceiling.** It is
+#' therefore centred on 1, not on 0:
+#' \itemize{
+#'   \item below 1: the observed recruitment record is no more concentrated
+#'     than some delay predicts. Nothing is refuted and nothing needs to be.
+#'   \item at 1: the record sits exactly at the bound, which is what a pure
+#'     delay of a perfectly observed series would give.
+#'   \item above 1: the record is more concentrated than the expectation
+#'     under any delay searched. In the *Lepanthes eltoroensis* data the
+#'     ratios are 2.56 and 2.51 for the six-monthly record and 9.0 and 15.9
+#'     for the monthly one.
+#' }
+#'
+#' **An exceedance above 1 is not by itself a refutation, and no threshold
+#' is supplied for it.** The bound applies to the expected series. A count
+#' series is more concentrated than its own mean, so some exceedance is
+#' expected even when the lag hypothesis is true, and how much depends on the
+#' counts rather than on the biology. Read the exceedance as a description of
+#' the gap to be explained, then take it to [ceiling_calibration()], which
+#' shows what the pooled comparison can refute (in this record, nothing), and
+#' to [host_lag_test()], which is where the refutation is made.
+#'
+#' **A high ceiling means a weak test.** The bound is reproduction's own
+#' concentration, so a seasonal reproductive record gives a high ceiling and
+#' little to detect. The test bites where reproduction is close to
+#' continuous. The closest empirical precedent for comparing the variability
+#' of the two series is Wright et al. (2005), who measured both for a
+#' neotropical forest but derived no bound from them.
+#'
+#' @references
+#' Hardy, G. H., Littlewood, J. E. and Polya, G. (1952) *Inequalities*, 2nd
+#' edn. Cambridge University Press, Cambridge.
+#'
+#' Marshall, A. W., Olkin, I. and Arnold, B. C. (2011) *Inequalities: Theory
+#' of Majorization and Its Applications*. Springer, New York.
+#' \doi{10.1007/978-0-387-68276-1}
+#'
+#' Wright, S. J., Muller-Landau, H. C., Calderon, O. and Hernandez, A. (2005)
+#' Annual and spatial variation in seedfall and seedling recruitment in a
+#' neotropical forest. *Ecology* 86: 848-860. \doi{10.1890/03-0750}
+#'
 #' @examples
 #' ce <- lag_ceiling(lepanthes_census, reproduction = "inflorescences", K = 4,
 #'                   kernels = lag_kernels(4, n_dirichlet = 200, bin = 6, unit = "mo"))

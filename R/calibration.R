@@ -24,6 +24,56 @@
 #'   observed one. The simulated draws are kept in `attr(, "sims")` for
 #'   plotting.
 #'
+#' @section Scale and how to read it:
+#'
+#' **`vmr`, the variance-to-mean ratio.** 1 is Poisson, above 1 is
+#' overdispersed, below 1 is underdispersed. The negative binomial exists
+#' only above 1, so a series with `vmr <= 1` raises an error rather than
+#' being silently forced. The observed recruit series is used by default.
+#'
+#' **`phi`, the reported size parameter.** \eqn{\phi = \mu / (v - 1)}, the
+#' same quantity as in [phi_moment()] and read the same way: variance
+#' \eqn{\mu + \mu^2/\phi}{mu + mu^2/phi}, so small `phi` is strong clumping and
+#' \eqn{\phi \to \infty}{phi -> infinity} is Poisson. It is derived here from the pooled
+#' series rather than from unit-level expectations, so it is not directly
+#' comparable with the `phi` of [host_lag_test()].
+#'
+#' **`p_gini`, `p_cv`, `p_zeros`.** Proportions in \[0, 1\]: the fraction of
+#' `nsim` simulated series that are at least as concentrated as, or have at
+#' least as many zero periods as, the observed one. 0.5 is the middle of the
+#' simulated distribution. The Monte Carlo resolution floor is
+#' \eqn{1/\mathrm{nsim}}{1/nsim}.
+#'
+#' **How to read a large value, which is the usual result.** A probability
+#' near 0.2 to 0.4, as in the *Lepanthes eltoroensis* record, does not
+#' support the lag hypothesis. It says that this comparison cannot separate
+#' the two, because counts that are small and clumped look episodic whatever
+#' their mean. That is a statement about the power of the pooled test and is
+#' the reason [host_lag_test()] exists. Reporting only the pooled comparison
+#' would understate what the data can do.
+#'
+#' **The two nulls.** `N0 flat mean` spreads the expected total evenly;
+#' `N1 best-kernel mean` uses the shape of the most concentrated kernel found
+#' by [lag_ceiling()], rescaled to the observed total. N1 is the more
+#' favourable of the two to a delay, so it is the one to read first. Both
+#' obey the ceiling by construction.
+#'
+#' **No threshold.** No cutoff is applied to these probabilities, and none is
+#' taken from the literature (Wasserstein and Lazar 2016).
+#'
+#' @references
+#' Bliss, C. I. and Fisher, R. A. (1953) Fitting the negative binomial
+#' distribution to biological data. *Biometrics* 9: 176-200.
+#' \doi{10.2307/3001850}
+#'
+#' Gelman, A., Meng, X.-L. and Stern, H. (1996) Posterior predictive
+#' assessment of model fitness via realized discrepancies. *Statistica
+#' Sinica* 6: 733-760.
+#'
+#' Wasserstein, R. L. and Lazar, N. A. (2016) The ASA statement on p-values:
+#' context, process, and purpose. *The American Statistician* 70: 129-133.
+#' \doi{10.1080/00031305.2016.1154108}
+#'
 #' @examples
 #' ce <- lag_ceiling(lepanthes_census, reproduction = "inflorescences", K = 4,
 #'                   kernels = lag_kernels(4, bin = 6, unit = "mo"))

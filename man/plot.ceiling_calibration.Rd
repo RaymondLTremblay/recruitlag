@@ -25,6 +25,25 @@ each null with the observed value and the ceiling marked. For a
 \code{host_lag_test}, the probability of a record at least as extreme as the
 observed one, by kernel family, on a log scale.
 }
+\section{Scale and how to read it}{
+
+
+For a \code{host_lag_test} the vertical axis is a probability on a log scale,
+floored at \eqn{1/\mathrm{nsim}}{1/nsim} because no simulation can resolve below
+that. Points sitting on the floor mean "smaller than
+\eqn{1/\mathrm{nsim}}{1/nsim}", not zero. Two horizontal lines are drawn: the
+dashed line is the flat reference, which is the comparison that matters,
+and the dotted line at 0.05 is a conventional reference mark and not a
+decision rule (Wasserstein and Lazar 2016). Read the plot as the spread of
+the whole kernel family, since the verdict is the highest point on it.
+
+For a \code{ceiling_calibration} the axis is the Gini of simulated count
+series, with the observed value and the ceiling on the mean marked. The
+distance between those two marks is the question the plot answers: how
+much of the gap between the ceiling and the observation is explained by
+counting alone.
+}
+
 \examples{
 ce <- lag_ceiling(lepanthes_census, reproduction = "inflorescences", K = 4,
                   kernels = lag_kernels(4, bin = 6, unit = "mo"))
@@ -33,4 +52,9 @@ plot(ceiling_calibration(ce, nsim = 2000))
 ht <- host_lag_test(lepanthes_hosts, unit = "host", reproduction = "inflorescences",
                     K = 4, nsim = 500, kernels = lag_kernels(4, bin = 6, unit = "mo"))
 plot(ht, statistic = "silent")
+}
+\references{
+Wasserstein, R. L. and Lazar, N. A. (2016) The ASA statement on p-values:
+context, process, and purpose. \emph{The American Statistician} 70: 129-133.
+\doi{10.1080/00031305.2016.1154108}
 }

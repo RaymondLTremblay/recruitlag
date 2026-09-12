@@ -35,8 +35,60 @@ observed one. In the companion paper this shows that the pooled comparison
 has no power on its own; the host-level test (\code{\link[=host_lag_test]{host_lag_test()}}) is where
 the refutation is made.
 }
+\section{Scale and how to read it}{
+
+
+\strong{\code{vmr}, the variance-to-mean ratio.} 1 is Poisson, above 1 is
+overdispersed, below 1 is underdispersed. The negative binomial exists
+only above 1, so a series with \code{vmr <= 1} raises an error rather than
+being silently forced. The observed recruit series is used by default.
+
+\strong{\code{phi}, the reported size parameter.} \eqn{\phi = \mu / (v - 1)}, the
+same quantity as in \code{\link[=phi_moment]{phi_moment()}} and read the same way: variance
+\eqn{\mu + \mu^2/\phi}{mu + mu^2/phi}, so small \code{phi} is strong clumping and
+\eqn{\phi \to \infty}{phi -> infinity} is Poisson. It is derived here from the pooled
+series rather than from unit-level expectations, so it is not directly
+comparable with the \code{phi} of \code{\link[=host_lag_test]{host_lag_test()}}.
+
+\strong{\code{p_gini}, \code{p_cv}, \code{p_zeros}.} Proportions in [0, 1]: the fraction of
+\code{nsim} simulated series that are at least as concentrated as, or have at
+least as many zero periods as, the observed one. 0.5 is the middle of the
+simulated distribution. The Monte Carlo resolution floor is
+\eqn{1/\mathrm{nsim}}{1/nsim}.
+
+\strong{How to read a large value, which is the usual result.} A probability
+near 0.2 to 0.4, as in the \emph{Lepanthes eltoroensis} record, does not
+support the lag hypothesis. It says that this comparison cannot separate
+the two, because counts that are small and clumped look episodic whatever
+their mean. That is a statement about the power of the pooled test and is
+the reason \code{\link[=host_lag_test]{host_lag_test()}} exists. Reporting only the pooled comparison
+would understate what the data can do.
+
+\strong{The two nulls.} \verb{N0 flat mean} spreads the expected total evenly;
+\verb{N1 best-kernel mean} uses the shape of the most concentrated kernel found
+by \code{\link[=lag_ceiling]{lag_ceiling()}}, rescaled to the observed total. N1 is the more
+favourable of the two to a delay, so it is the one to read first. Both
+obey the ceiling by construction.
+
+\strong{No threshold.} No cutoff is applied to these probabilities, and none is
+taken from the literature (Wasserstein and Lazar 2016).
+}
+
 \examples{
 ce <- lag_ceiling(lepanthes_census, reproduction = "inflorescences", K = 4,
                   kernels = lag_kernels(4, bin = 6, unit = "mo"))
 ceiling_calibration(ce, nsim = 2000)
+}
+\references{
+Bliss, C. I. and Fisher, R. A. (1953) Fitting the negative binomial
+distribution to biological data. \emph{Biometrics} 9: 176-200.
+\doi{10.2307/3001850}
+
+Gelman, A., Meng, X.-L. and Stern, H. (1996) Posterior predictive
+assessment of model fitness via realized discrepancies. \emph{Statistica
+Sinica} 6: 733-760.
+
+Wasserstein, R. L. and Lazar, N. A. (2016) The ASA statement on p-values:
+context, process, and purpose. \emph{The American Statistician} 70: 129-133.
+\doi{10.1080/00031305.2016.1154108}
 }

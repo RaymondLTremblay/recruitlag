@@ -28,6 +28,31 @@
 #' @return A matrix of expected counts with the dimensions of `R`. A unit
 #'   whose lagged reproduction is zero throughout, but which recruited, is
 #'   given a flat expectation.
+#'
+#' @section Scale and how to read it:
+#'
+#' The returned values are expected counts on the scale of `R`, and each
+#' row sums to that unit's observed recruit total. That is the whole of the
+#' scaling: no rate, no offset and no fitted coefficient. Two consequences
+#' follow and are worth keeping in mind when reading the output.
+#'
+#' First, the test built on this expectation is about **timing only**. How
+#' many recruits a unit received is taken from the data and is never
+#' predicted, so a unit that recruited heavily cannot make the lag hypothesis
+#' look good or bad by its total, only by when those recruits arrived.
+#'
+#' Second, a unit that never recruited has an all-zero row and contributes
+#' nothing at all, so the effective replication is the number of units with
+#' at least one recruit and not `nrow(R)`. In the *Lepanthes eltoroensis*
+#' host matrices that is 17 of the 23 trees, although
+#' [host_lag_test()] prints all 23. `sum(rowSums(R) > 0)` gives the number
+#' that actually carries the test, and it is the same set [phi_moment()]
+#' estimates clumping over.
+#'
+#' A unit with recruits but no lagged reproduction on record is given a flat
+#' row rather than being dropped, because dropping it would quietly remove
+#' the units least favourable to the lag hypothesis.
+#'
 #' @examples
 #' mu <- expected_recruits(lepanthes_hosts, unit = "host",
 #'                         reproduction = "inflorescences", w = flat_kernel(4))
@@ -84,8 +109,61 @@ check_host_inputs <- function(R, X) {
 #'
 #' @param R Numeric matrix of recruit counts, units by scored censuses.
 #' @param mu Matrix of expected counts, as returned by [expected_recruits()].
-#' @param cap Upper limit returned when the counts show no overdispersion.
-#' @return A single number.
+#' @param cap Upper limit returned when the counts show no overdispersion,
+#'   that is, when the observed mean squared deviation does not exceed the
+#'   mean and the moment estimator would be negative or undefined. The
+#'   default 1e6 is an effectively Poisson value and is a sentinel, not an
+#'   estimate: treat a returned `cap` as "no overdispersion detected".
+#' @return A single number on the scale described below.
+#'
+#' @section Scale and how to read it:
+#'
+#' `phi` is the size (or clumping) parameter of the negative binomial, `k` in
+#' the ecological literature, entering the variance as
+#' \eqn{\mathrm{Var}(R) = \mu + \mu^2 / \phi}{Var(R) = mu + mu^2 / phi}. Read \eqn{1/\phi}{1/phi} rather than
+#' \eqn{\phi}{phi}: it is the excess variance per unit of squared mean.
+#'
+#' \itemize{
+#'   \item \eqn{\phi \to \infty}{phi -> infinity} (\eqn{1/\phi = 0}): no clumping, the counts
+#'     are Poisson about their mean. This is the value `cap` stands in for.
+#'   \item \eqn{\phi = 1}: variance \eqn{\mu + \mu^2}, strong clumping.
+#'   \item \eqn{\phi < 1}: heavier still. The *Lepanthes eltoroensis* host
+#'     matrices give \eqn{\phi = 0.19} under the heterogeneous mean, so at a
+#'     mean of 1 recruit the variance is about 6.
+#'   \item \eqn{\phi \le 0} is not returned: the estimator is capped instead.
+#' }
+#'
+#' Smaller `phi` makes the null more permissive, because clumped counts are
+#' themselves episodic. A test run at a small `phi` is therefore the
+#' conservative one, which is why [host_lag_test()] accepts a vector of fixed
+#' values as a stress test.
+#'
+#' **No threshold, and no comparison across data sets.** The package supplies
+#' no value of `phi` above which a record counts as aggregated. `phi` is also
+#' not a fixed constant of a species or a system: it is density dependent
+#' (Taylor, Woiwod and Perry 1979), so two estimates are comparable only at
+#' comparable means. Report it with the mean it was estimated at, as
+#' [host_lag_test()] does.
+#'
+#' **Which mean it is estimated about matters.** Estimating `phi` about a
+#' single pooled mean, rather than about the unit-by-census means of
+#' [expected_recruits()], attributes the between-unit spread of the means to
+#' clumping and roughly halves the estimate. In the companion paper the
+#' single-mean value was 0.089 against the moment value 0.19 under the
+#' heterogeneous mean.
+#'
+#' @references
+#' Anscombe, F. J. (1949) The statistical analysis of insect counts based on
+#' the negative binomial distribution. *Biometrics* 5: 165-173.
+#' \doi{10.2307/3001918}
+#'
+#' Bliss, C. I. and Fisher, R. A. (1953) Fitting the negative binomial
+#' distribution to biological data. *Biometrics* 9: 176-200.
+#' \doi{10.2307/3001850}
+#'
+#' Taylor, L. R., Woiwod, I. P. and Perry, J. N. (1979) The negative binomial
+#' as a dynamic ecological model for aggregation, and the density dependence
+#' of k. *Journal of Animal Ecology* 48: 289-304. \doi{10.2307/4114}
 #' @examples
 #' m <- host_matrices(lepanthes_hosts, unit = "host", reproduction = "inflorescences")
 #' mu <- expected_recruits(m$R, m$X, w = flat_kernel(4))
@@ -135,6 +213,54 @@ phi_moment <- function(R, mu, cap = 1e6) {
 #'   `max`, the largest census total. The Gini and CV are the pre-specified
 #'   statistics of the companion paper; the silent-census count is the most
 #'   interpretable and the largest census the least sensitive.
+#'
+#' @section Scale and how to read it:
+#'
+#' **The probabilities.** `p_silent`, `p_gini`, `p_cv` and `p_max` are
+#' proportions in \[0, 1\]: the fraction of `nsim` simulated records, drawn
+#' under the profile in that row, that are at least as extreme as the
+#' observed one on that statistic. They are predictive probabilities in the
+#' sense of Gelman, Meng and Stern (1996), computed under a fully specified
+#' null with nothing fitted. A value near 0.5 means the observed record is an
+#' ordinary draw under that profile. A value near 0 means it is not.
+#'
+#' **The resolution floor.** A probability cannot be resolved below
+#' \eqn{1/\mathrm{nsim}}{1/nsim}. With the default `nsim = 10000` a reported 0.0000
+#' means "smaller than 1e-4", not zero, and the difference between 0.0000 and
+#' 0.0002 is one simulated record. Raise `nsim` before reading anything into
+#' a very small value, and note that [plot.host_lag_test()] floors the axis
+#' at \eqn{1/\mathrm{nsim}}{1/nsim} for the same reason.
+#'
+#' **The verdict is a maximum, not an average.** `verdict` takes, for each
+#' statistic, the largest probability over every profile and every `phi`
+#' setting, together with the profile attaining it. It is therefore the best
+#' case the lag hypothesis can make for itself over the whole family
+#' searched. A small verdict says that no profile in the family, not merely
+#' the fitted one, reproduces the record.
+#'
+#' **No threshold.** The package applies no cutoff to these probabilities and
+#' reports them as numbers. The 0.05 line drawn by [plot.host_lag_test()] is
+#' a conventional reference mark and not a decision rule; a bright-line
+#' threshold is exactly what the ASA statement on p-values advises against
+#' (Wasserstein and Lazar 2016). What the companion paper reports is the
+#' magnitude (a verdict of 0.0007 at the moment `phi`, 0.048 at a `phi` fixed
+#' three times lower) and leaves the reader the judgement.
+#'
+#' **Where the test is weak.** The probabilities rise, correctly, when
+#' reproduction is seasonal, because a concentrated input can produce a
+#' concentrated output and the ceiling is then high. An ordinary verdict is
+#' therefore not evidence for a lag; it is the absence of evidence against
+#' one. See the `invented-regimes` vignette, which shows both outcomes on
+#' constructed records whose mechanism is known.
+#'
+#' @references
+#' Gelman, A., Meng, X.-L. and Stern, H. (1996) Posterior predictive
+#' assessment of model fitness via realized discrepancies. *Statistica
+#' Sinica* 6: 733-760.
+#'
+#' Wasserstein, R. L. and Lazar, N. A. (2016) The ASA statement on p-values:
+#' context, process, and purpose. *The American Statistician* 70: 129-133.
+#' \doi{10.1080/00031305.2016.1154108}
 #'
 #' @examples
 #' ht <- host_lag_test(lepanthes_hosts, unit = "host", reproduction = "inflorescences",
