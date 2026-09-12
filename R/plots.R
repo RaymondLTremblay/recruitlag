@@ -75,22 +75,28 @@ plot_ceiling_strip <- function(..., index = c("gini", "cv")) {
     ggplot2::geom_segment(ggplot2::aes(x = .data$ceiling, xend = .data$ceiling,
                                        y = as.numeric(.data$strip) - 0.42, yend = as.numeric(.data$strip) + 0.42),
                           colour = rl_blue, linewidth = 1.6) +
-    ggplot2::geom_text(ggplot2::aes(x = .data$ceiling, y = as.numeric(.data$strip) + 0.55,
+    ggplot2::geom_text(ggplot2::aes(x = .data$ceiling, y = as.numeric(.data$strip) + 0.40,
                                     label = sprintf("ceiling %.2f", .data$ceiling),
                                     hjust = ifelse(.data$ceiling < 0.15 * xmax, 0, 0.5)), colour = rl_blue, size = 3.2) +
     ggplot2::geom_point(ggplot2::aes(x = .data$observed, y = as.numeric(.data$strip)),
                         colour = rl_verm, size = 4) +
-    ggplot2::geom_text(ggplot2::aes(x = .data$observed, y = as.numeric(.data$strip) - 0.55,
-                                    label = sprintf("observed %.2f, %.1f times the ceiling", .data$observed, .data$exceedance),
-                                    hjust = ifelse(.data$observed > 0.6 * xmax, 1, 0)),
+    # The observed label sits beside its point rather than below it. Below, it
+    # lands on the ceiling label of the next strip as soon as there are more
+    # than two strips, and a figure of one strip per population or per species
+    # is the main use.
+    ggplot2::geom_text(ggplot2::aes(x = .data$observed + ifelse(.data$observed > 0.8 * xmax, -1, 1) * 0.02 * xmax,
+                                    y = as.numeric(.data$strip),
+                                    label = sprintf("%.2f (%.1fx)", .data$observed, .data$exceedance),
+                                    hjust = ifelse(.data$observed > 0.8 * xmax, 1, 0)),
                        colour = rl_verm, size = 3.2) +
     ggplot2::scale_y_continuous(breaks = seq_along(levels(d$strip)), labels = levels(d$strip),
-                                limits = c(0.3, length(objs) + 0.8)) +
+                                limits = c(0.4, length(objs) + 0.7)) +
     ggplot2::scale_x_continuous(limits = c(0, xmax), expand = ggplot2::expansion(0)) +
     ggplot2::labs(x = if (index == "gini") "concentration in time (Gini coefficient)\n0 = the same count every period, 1 = the whole total in one period"
                   else "concentration in time (coefficient of variation)",
                   y = NULL,
-                  subtitle = "Each strip is a number line. The light region is reachable by a delay; the dark region is not.") +
+                  subtitle = paste("Each strip is a number line. The light region is reachable by a delay; the dark region is not.",
+                                   "Beside each point, its concentration and how many times the ceiling that is.", sep = "\n")) +
     rl_theme() +
     ggplot2::theme(panel.grid = ggplot2::element_blank(), axis.text.y = ggplot2::element_text(size = 10))
 }
