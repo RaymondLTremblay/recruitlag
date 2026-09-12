@@ -1,0 +1,203 @@
+---
+title: "The mathematics behind the test, and the functions that implement it"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{The mathematics behind the test, and the functions that implement it}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4)
+```
+
+```{r}
+library(recruitlag)
+```
+
+## 1. The hypothesis as a convolution
+
+Let $X_t$ be the reproductive record at periods $t = 1, \dots, T$ and $R_t$
+the recruits scored at a subset of periods. The lag hypothesis, in the form
+a distributed-lag or antecedent-effect model estimates and in the form a
+projection matrix asserts, is that expected recruitment is a weighted sum of
+past reproduction,
+
+$$
+\mathbb{E}[R_t] \;=\; c \sum_{k=0}^{K} w_k \, X_{t - \ell_0 - k},
+\qquad w_k \ge 0,\quad \sum_k w_k = 1 ,
+$$
+
+with $c$ a scale, $\ell_0$ the offset of the first bin ($\ell_0 = 1$ is the
+projection-matrix convention: the first bin is the census before the recruit
+census) and $w$ the lag profile. The projection-matrix null is the special
+case $w = (1, 0, \dots, 0)$. `convolve_lag()` computes the sum for a given
+$w$; `lag_kernels()` builds families of $w$; the scale $c$ never matters for
+what follows.
+
+```{r}
+X <- lepanthes_census$inflorescences
+convolve_lag(X, c(0, 0, 0, 0, 1), t_R = 3:12)          # pure 24 to 30 month delay
+convolve_lag(X, flat_kernel(4), t_R = 3:12)             # equal weights
+```
+
+Lags that fall before the first census are read as the first census's value
+(`missing = "backfill"`). This asserts that reproduction before the record
+began was at the level first observed. The alternative, zero-filling,
+asserts that no seed fell before the record began, which turns every long
+pure delay into a prediction of no recruits at the first censuses; that is an
+artefact of the record's start, not a property of the hypothesis, and the
+package does not offer it.
+
+## 2. The ceiling: averaging cannot concentrate
+
+Write the expected series as $\mu = W X$ with $W$ the $n \times T$ matrix of
+weights. Each row of $W$ is non-negative and sums to one, so each $\mu_t$ is
+a weighted average of the $X$ values in its window. The concentration
+indices used here, the Gini coefficient
+
+$$
+G(x) = \frac{2 \sum_{i=1}^{n} i\, x_{(i)}}{n \sum_i x_i} - \frac{n+1}{n},
+$$
+
+with $x_{(i)}$ the values in increasing order, and the coefficient of
+variation $\mathrm{CV}(x) = s_x / \bar x$, are both Schur-convex: they fall
+whenever a quantity is moved from a fuller period to an emptier one, and
+they are invariant to scale. By the Hardy, Littlewood and Pólya theorem, a
+vector obtained from another by a doubly stochastic matrix is majorized by
+it, and every Schur-convex index of the output is therefore no larger than
+that of the input. Over a full record, in which every $X_t$ enters the same
+number of windows with the same total weight, $W$ is doubly stochastic up to
+the boundary, and the most concentrated output available is the pure delay,
+which permutes the series without mixing it. Hence
+
+$$
+\text{concentration}\big(\mathbb{E}[R]\big) \;\le\; \text{concentration}(X),
+$$
+
+with equality at a pure delay. Reproduction's own concentration is the
+ceiling. `lag_ceiling()` reports it as `theorem` and confirms it by searching
+the kernel families on exactly the periods at which recruits are scored; the
+searched maximum can differ from the bound by a small amount in either
+direction because of the boundary (backfilling) and because the scored
+periods are a subset of the record.
+
+```{r}
+ce <- lag_ceiling(lepanthes_census, reproduction = "inflorescences", K = 4,
+                  kernels = lag_kernels(4, n_dirichlet = 2000, bin = 6, unit = "mo"))
+ce$theorem; ce$ceiling; ce$best$label
+```
+
+The searched cloud shows the whole family sitting below the bound, with
+pure delays at its edge:
+
+```{r}
+s <- ce$search
+plot(s$gini, s$cv, pch = 16, cex = 0.5, col = ifelse(s$family == "pure delay", "#D55E00", "#56B4E9"),
+     xlab = "Gini of the expected series", ylab = "CV of the expected series",
+     xlim = c(0, 0.7), ylim = c(0, 1.5))
+abline(v = ce$theorem["gini"], h = ce$theorem["cv"], lty = 2)
+points(ce$obs["gini"], ce$obs["cv"], pch = 17, cex = 1.6)
+legend("topleft", bty = "n", pch = c(16, 16, 17), col = c("#56B4E9", "#D55E00", "black"),
+       legend = c("searched kernels", "pure delays", "observed recruitment"))
+```
+
+The bound is stated for the expectation. The observed series is a count
+about that expectation, and counts are more concentrated than their mean.
+The exceedance `ce$exceedance` is therefore a description, not a test.
+
+## 3. The second diagnosis: the lag is unidentifiable
+
+If $X$ is nearly constant, $W X$ is nearly constant for every $W$, and the
+data carry almost no information about $w$. A distributed-lag model fitted
+to such data returns its prior, however long the series runs; the fitted
+profile in `lepanthes$lag_profile` is close to flat for that reason.
+`plot_expected()` makes the point visually: profiles that could not differ
+more give expected series that all but coincide.
+
+## 4. Calibrating the pooled comparison
+
+To ask whether an exceedance of the ceiling by counts means anything, take a
+mean that obeys the ceiling (the flat mean, or the best-kernel mean rescaled
+to the observed total) and draw negative-binomial counts about it with the
+observed variance-to-mean ratio $v$, so that the size parameter is
+$\phi = \mu / (v - 1)$. The probability that the simulated series is at
+least as concentrated as the observed one is what `ceiling_calibration()`
+reports. In the *Lepanthes* record and in every invented record of
+`regimes`, that probability is ordinary: pooled over units, small clumped
+counts about a flat mean look episodic whatever the mechanism.
+
+## 5. The host-level null, stated as the hypothesis is asserted
+
+The lag hypothesis is a statement about each unit. For unit $p$ with recruit
+totals $S_p = \sum_t R_{p,t}$, the null fixes
+
+$$
+\mu_{p,t} \;=\; S_p \,\frac{\sum_k w_k X_{p,\,t-\ell_0-k}}{\sum_{t'} \sum_k w_k X_{p,\,t'-\ell_0-k}},
+$$
+
+so that the shape of each unit's expected series is its own lagged
+reproduction and its scale is its own observed total. Nothing is fitted. A
+unit with no lagged reproduction on record but with recruits is given a flat
+expectation; a unit that never recruited contributes nothing.
+`expected_recruits()` returns this matrix.
+
+Clumping is estimated under that heterogeneous mean. For negative-binomial
+counts with means $\mu_{p,t}$ and common size $\phi$,
+$\mathbb{E}[(R - \mu)^2] = \mathbb{E}[\mu] + \mathbb{E}[\mu^2]/\phi$, so
+
+$$
+\hat\phi \;=\; \frac{\overline{\mu^2}}{\overline{(R-\mu)^2} - \bar\mu}
+$$
+
+over the units that recruited (`phi_moment()`). Estimating $\phi$ about a
+single pooled mean instead attributes the between-unit spread of the means
+to clumping and roughly halves $\hat\phi$; the companion paper reports both,
+with the single-mean value as a stress test.
+
+```{r}
+h <- host_matrices(lepanthes_hosts, unit = "host", reproduction = "inflorescences")
+mu <- expected_recruits(h$R, h$X, w = c(0, 0, 0, 0, 1))
+rowSums(mu)[1:5]; rowSums(h$R)[1:5]     # scaled to each host's total
+phi_moment(h$R, mu)
+```
+
+`host_matrices()` is what the data-frame interface of `expected_recruits()`
+and `host_lag_test()` calls; a long tibble with `unit`, `period`,
+`reproduction` and `recruits` columns can be passed directly.
+
+`host_lag_test()` then draws, for each profile, `nsim` negative-binomial
+count matrices about $\mu$ with size $\hat\phi$, sums them over units to a
+census series, and computes four statistics of that series: the number of
+silent censuses (no recruit on any unit), the Gini and CV of the census
+totals, and the largest total. The reported probability is the fraction of
+draws at least as extreme as the observed record. Over profiles, the verdict
+is the maximum of each probability, that is, the best case the lag
+hypothesis can make for itself. The Gini and CV are the pre-specified
+statistics of the paper; the silent-census count is the most interpretable
+where a gate closes completely, and the largest census the least sensitive.
+
+## 6. What the test does and does not say
+
+A small verdict says that no delayed consequence of each unit's own
+reproduction, of any profile over the horizon searched, produces a record as
+concentrated as the observed one: the timing of recruitment is not set by
+the timing of seed supply. It does not identify what sets it. An ordinary
+verdict says the record is consistent with a delay; it does not identify the
+delay, which under continuous reproduction cannot be recovered (Section 3).
+Where reproduction is seasonal the ceiling is high and the test is weak, as
+the invented records show; aseasonality is where it bites.
+
+## Function map
+
+| Step | Function | Companion-paper phase |
+|---|---|---|
+| Concentration indices | `gini()`, `cv()`, `concentration()` | Table of series |
+| Lag profiles | `lag_kernels()`, `flat_kernel()` | 9a, 9d |
+| From a long data frame to series and matrices | `series_from()`, `host_matrices()` | data preparation |
+| Expected series | `convolve_lag()` | 9a, 9b |
+| Ceiling and search | `lag_ceiling()` | 9a |
+| Pooled calibration | `ceiling_calibration()` | 9b |
+| Unit-level expectation and clumping | `expected_recruits()`, `phi_moment()` | 9d |
+| Host-level test | `host_lag_test()` | 9d |
+| Figures | `plot_series()`, `plot_ceiling_strip()`, `plot_profiles()`, `plot_expected()`, `plot()` methods | Figs 2, 3 and 5 |

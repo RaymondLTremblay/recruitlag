@@ -1,0 +1,13 @@
+quantity,value
+"p_zero, flat reference at phi = 0.089 (single-mean estimate)",0.0066
+"p_zero, flat null at the corrected moment phi",1e-04
+"max p_zero over every kernel, moment phi (primary)",0.000667
+kernel attaining it,Dirichlet(0.3) draw 350
+max p_zero over every kernel at phi = 0.089 (twice the supported clumping),0.0483
+kernel attaining it,pure delay 0-6 mo
+"max p_gini over every kernel, moment phi",0.005
+"max p_cv over every kernel, moment phi",0.0343
+max p_gini over every kernel at phi = 0.089,0.154
+"max p_zero, adults input, backfill, moment phi",3e-04
+"max p_zero, inflorescences, renormalised (sensitivity; see pure-delay table)",0.216
+"max p_zero, inflorescences, zero-filled (sensitivity)",0.216

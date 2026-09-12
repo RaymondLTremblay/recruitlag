@@ -1,0 +1,3 @@
+dataset,zero periods observed,expected under Poisson(mean),observed variance / mean,Poisson would be
+monthly (1994),14 of 22,2.5%,27.81716637272192,1
+six-monthly (1999-2004),3 of 10,0.0%,28.239373601789712,1

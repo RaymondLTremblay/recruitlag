@@ -1,0 +1,47 @@
+Package: recruitlag
+Type: Package
+Title: Can Episodic Recruitment Be a Delayed Consequence of Continuous
+    Reproduction?
+Version: 0.1.0
+Authors@R:
+    person("Raymond L.", "Tremblay", email = "raymond.tremblay@gmail.com",
+           role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-8588-4372"))
+Description: Tests whether an episodic recruitment record can be the delayed
+    consequence of a reproductive record, under any distributed lag. A delay
+    is a convolution, and a convolution is a weighted average, so the
+    concentration in time of expected recruitment can never exceed that of
+    reproduction: reproduction's own concentration is a ceiling. The package
+    computes that ceiling by searching families of lag weights (pure delays,
+    windows, geometric decay and Dirichlet draws), calibrates the pooled
+    comparison against negative-binomial counts to show what it can and
+    cannot refute, and runs the host-level (replicate-unit) test in which the
+    null is the lag hypothesis exactly as it is asserted: expected
+    recruitment on each unit is that unit's own lagged reproduction, scaled to
+    its own total. Plotting functions draw the ceiling strip, the lag profiles
+    against the observed counts, and the calibration. The census data on the
+    epiphytic orchid Lepanthes eltoroensis analysed in the companion paper are
+    included.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Language: en-GB
+LazyData: true
+Depends:
+    R (>= 4.1)
+Imports:
+    ggplot2,
+    rlang,
+    stats,
+    tibble
+VignetteBuilder: knitr
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    dplyr,
+    tidyr
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+URL: https://github.com/raymondltremblay/recruitlag
+BugReports: https://github.com/raymondltremblay/recruitlag/issues

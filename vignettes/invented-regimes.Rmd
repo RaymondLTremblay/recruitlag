@@ -1,0 +1,213 @@
+---
+title: "Invented records: where the test has power and where it does not"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Invented records: where the test has power and where it does not}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.5)
+```
+
+```{r, message = FALSE}
+library(recruitlag)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+The `regimes` tibble holds six constructed census records, one row per
+record, unit and period: three reproductive regimes (seasonal, intermediate,
+aseasonal) crossed with two recruitment mechanisms. Under `delayed`,
+recruits on each of 20 units are a true delayed consequence of that unit's
+own reproduction, through a fixed five-bin lag profile with
+negative-binomial counts. Under `gated`, recruits arrive only at three of 24
+periods, when an external gate opens, at a rate proportional to each unit's
+average reproduction, so the record is episodic and does not track
+reproduction. Nothing here is data; the generating rules are in
+`data-raw/regimes.R` and in `regimes_truth`.
+
+```{r}
+regimes
+regimes_truth
+```
+
+The point of the set is to show three things: the ceiling is high where
+reproduction is seasonal and low where it is aseasonal; the pooled
+comparison of observed concentration with the ceiling cannot decide the
+question on its own; and the host-level test separates a true delay from a
+gate where the ceiling is low, and loses that power as reproduction becomes
+seasonal.
+
+## The six records
+
+System totals by period, then reproduction and recruits side by side, each
+on its own scale from zero (recruits are an order of magnitude fewer and
+would vanish on a shared axis).
+
+```{r}
+totals <- regimes |>
+  group_by(record, label, period) |>
+  summarise(reproduction = sum(reproduction),
+            recruits = if (all(is.na(recruits))) NA_real_ else sum(recruits),
+            .groups = "drop")
+totals
+```
+
+```{r, fig.height = 8}
+totals |>
+  pivot_longer(c(reproduction, recruits), names_to = "series", values_to = "count") |>
+  mutate(series = factor(series, c("reproduction", "recruits")),
+         label = factor(label, unique(regimes$label))) |>
+  mutate(panel = factor(paste(label, series, sep = ": "),
+                        paste(rep(unique(regimes$label), each = 2), c("reproduction", "recruits"), sep = ": "))) |>
+  ggplot(aes(period, count, fill = series)) +
+  geom_col(width = 0.7, na.rm = TRUE) +
+  facet_wrap(~ panel, ncol = 2, scales = "free_y") +
+  scale_fill_manual(values = c(reproduction = "#0072B2", recruits = "#D55E00"), guide = "none") +
+  theme_minimal(base_size = 8.5) +
+  theme(strip.text = element_text(hjust = 0))
+```
+
+Going down the left column, reproduction goes from strongly seasonal to
+flat. In the right column, the `delayed` records track reproduction as a
+smoothed, shifted copy, and the `gated` records arrive in bursts at the same
+three periods whatever the reproductive regime.
+
+## The ceiling
+
+For each record, the ceiling is the concentration of reproduction itself,
+and `lag_ceiling()` confirms by search that no lag profile exceeds it on the
+scored periods. A unit-by-period table is summed to the system series
+automatically, so each record can be passed straight in.
+
+```{r}
+k4 <- lag_kernels(4)
+ceilings <- regimes |>
+  group_split(record) |>
+  setNames(sort(unique(regimes$record))) |>
+  lapply(lag_ceiling, K = 4, kernels = k4)
+
+tibble(record = names(ceilings),
+       ceiling = sapply(ceilings, function(x) x$theorem["gini"]),
+       observed = sapply(ceilings, function(x) x$obs["gini"]),
+       exceedance = sapply(ceilings, function(x) x$exceedance["gini"])) |>
+  mutate(across(where(is.numeric), round, 2))
+```
+
+```{r, fig.height = 5}
+plot_ceiling_strip(ceilings)
+```
+
+Two rows of the table carry the lesson. Under seasonal reproduction the
+ceiling is about 0.65, and both records, the true delay and the gate, sit
+near it: the gated record exceeds the ceiling only slightly, and a reader
+could not tell the two mechanisms apart from the pooled series. Under
+aseasonal reproduction the ceiling is near zero, so the gated record exceeds
+it by an enormous factor, but so does the true delay, by a large one. That
+second fact is the reason the pooled comparison cannot be the test: counts
+are noisier than their expectation, and when the expectation is nearly
+constant, any count series at all looks concentrated by comparison.
+
+## Why the pooled comparison has no power
+
+`ceiling_calibration()` simulates negative-binomial counts about two means
+that both obey the ceiling, a flat mean and the best-kernel mean, and asks
+how often the simulated series is at least as concentrated as the observed
+one.
+
+```{r}
+set.seed(1)
+cal <- lapply(ceilings, ceiling_calibration, nsim = 3000)
+bind_rows(cal, .id = "record") |> select(record, null, phi, p_gini, p_cv)
+```
+
+Every probability is ordinary. The calibration says that a mean obeying the
+ceiling, once sampled as clumped counts, routinely produces series as
+concentrated as any of the six, gated or not. Pooled over units, the test
+cannot refute anything.
+
+## The host-level test
+
+The null stated at the level at which the lag hypothesis is asserted:
+expected recruitment on each unit is that unit's own lagged reproduction,
+scaled to its own total, with clumping estimated by the moment identity
+under that heterogeneous mean. Simulated counts are summed over units and
+compared with the observed census totals on four statistics.
+
+```{r}
+set.seed(2)
+tests <- regimes |>
+  group_split(record) |>
+  setNames(sort(unique(regimes$record))) |>
+  lapply(host_lag_test, K = 4, nsim = 2000, kernels = k4)
+
+verdict <- bind_rows(lapply(tests, `[[`, "verdict"), .id = "record") |>
+  select(record, statistic, max_p) |>
+  pivot_wider(names_from = statistic, values_from = max_p, names_prefix = "P_")
+verdict
+```
+
+Read the rows in pairs. Under seasonal reproduction the true delay is not
+refuted (P near 1), but neither is the gate: a lagged seasonal input itself
+predicts a concentrated census series, and counts about that expectation are
+as concentrated as the gated record, so the host-level test has little power
+where the ceiling is high, exactly as the pooled comparison had none. Under
+intermediate seasonality the true delay is not refuted and the gate is
+refuted on the Gini and CV of the census totals, because its bursts do not
+fall where the lagged peaks predict them. Under aseasonal reproduction the
+true delay is again not refuted, with P in the middle of its range, and the
+gate is refuted decisively. The silent-census statistic is uninformative in
+these records because the gate keeps a small background rate open at every
+period; in the *Lepanthes* record it is the most interpretable statistic
+because the gate there closed completely.
+
+```{r}
+plot(tests$aseasonal_gated, statistic = "gini")
+```
+
+## Is the host-level test calibrated?
+
+When the true profile is among the kernels, the probability it receives
+should be uniformly distributed over replicate draws of the data. The
+following draws new data sets from the aseasonal generating rule, evaluates
+the true profile on each with a small simulation budget, and shows the
+distribution of P. It is kept small so that the vignette builds quickly;
+increase `n_rep` and `nsim` to tighten it.
+
+```{r}
+set.seed(11)
+H <- 20; Tn <- 24; K <- 4; t_R <- 6:24
+w_true <- regimes_truth |> filter(mechanism == "delayed") |> pull(value)
+base <- round(exp(rnorm(H, log(12), 0.6)))
+n_rep <- 12
+p_true <- replicate(n_rep, {
+  d <- tibble(unit = rep(sprintf("u%02d", 1:H), each = Tn), period = rep(1:Tn, H),
+              reproduction = as.vector(t(sapply(base, function(b) rpois(Tn, b)))))
+  d <- d |> group_by(unit) |>
+    mutate(mu = c(rep(NA, 5), 0.08 * convolve_lag(reproduction, w_true, t_R, 1)),
+           recruits = ifelse(is.na(mu), NA, rnbinom(n(), size = 2, mu = ifelse(is.na(mu), 0, mu)))) |>
+    ungroup()
+  ht <- host_lag_test(d, K = K, nsim = 300, flat = FALSE,
+                      kernels = lag_kernels(K, families = "delay", extra = list(truth = w_true)))
+  ht$table$p_gini[ht$table$label == "truth"]
+})
+round(sort(p_true), 2)
+```
+
+The values spread across the unit interval rather than piling up near zero,
+which is what a calibrated test does when the null is true. A single draw
+can of course land in the tail; the seed of `data-raw/regimes.R` was chosen
+so that the delayed records in `regimes` are typical draws rather than tail
+ones.
+
+## What to take from the set
+
+The ceiling is a statement about expectations, and where reproduction is
+seasonal it is too high to bite. Where reproduction is aseasonal the ceiling
+is low, but the pooled comparison still cannot decide the question, because
+counts about a flat mean look concentrated. The decision comes from
+replicate units: a true delay predicts, for each unit, a series shaped by
+that unit's own reproduction, and a gate does not.

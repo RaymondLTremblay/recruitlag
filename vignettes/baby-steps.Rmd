@@ -1,0 +1,296 @@
+---
+title: "Baby steps: running the test one line at a time"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Baby steps: running the test one line at a time}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4)
+```
+
+This vignette is for someone who has never used the package, and maybe has
+not used R much either. There is no mathematics in it. Every step is shown,
+and after each step you should look at what R printed and check that it
+matches. If you want to know *why* the steps work, read the vignette called
+"The mathematics behind the test" afterwards.
+
+The question the package answers is this. A plant population reproduces
+(flowers, fruits, seeds) and later new seedlings appear (recruits). If the
+seedlings are simply the seeds from some earlier time, then a record of
+reproduction and a record of seedlings should look like each other, shifted
+in time. The package checks whether that is possible.
+
+## Step 1. Load the packages
+
+```{r, message = FALSE}
+library(recruitlag)
+library(dplyr)
+library(ggplot2)
+```
+
+Nothing is printed. That is correct: loading a package is silent. `dplyr`
+is for picking rows and columns out of tables, `ggplot2` for drawing.
+
+## Step 2. Look at a data set
+
+The package includes a made-up data set called `regimes`. It is one table
+with six census records stacked in it, one row per record, unit (think
+"host tree") and census period.
+
+```{r}
+regimes
+```
+
+The first line says it has 2,880 rows and 8 columns. We take one record
+out of it, the one in which reproduction is steady through the year but the
+seedlings arrive in bursts.
+
+```{r}
+r <- regimes |> filter(record == "aseasonal_gated")
+r
+```
+
+`filter()` keeps only the rows of that record: 20 units times 24 periods is
+480 rows. Each row has the reproduction counted on one unit at one period
+and the recruits (new seedlings) seen there. Recruits are `NA` at periods 1
+to 5, which means "not scored": the test only uses periods that have a full
+lag window behind them.
+
+## Step 3. Add up over units
+
+The first test works on the whole population, so add the units together.
+
+```{r}
+totals <- r |>
+  group_by(period) |>
+  summarise(reproduction = sum(reproduction),
+            recruits = if (all(is.na(recruits))) NA else sum(recruits))
+totals
+```
+
+Look down the `reproduction` column: the numbers wander around a few hundred
+and never do anything dramatic. Now look at `recruits`: mostly small numbers,
+then three huge ones. That difference is what the test is about. Draw it:
+
+```{r}
+totals |>
+  tidyr::pivot_longer(c(reproduction, recruits), names_to = "series", values_to = "count") |>
+  ggplot(aes(period, count)) +
+  geom_col(fill = "grey40") +
+  facet_wrap(~ series, ncol = 1, scales = "free_y") +
+  theme_minimal()
+```
+
+## Step 4. Measure how "bursty" each series is
+
+The package measures burstiness with a number between 0 and 1 called the Gini
+coefficient. 0 means every census had the same count. Close to 1 means almost
+everything happened at one census.
+
+```{r}
+gini(totals$reproduction)
+gini(totals$recruits)
+```
+
+(`gini()` ignores the `NA`s.) Reproduction scores very low: it is spread
+evenly. Recruits score high: they are concentrated in a few censuses. Write
+those two numbers down.
+
+## Step 5. Ask the key question
+
+Could a delay turn the smooth series into the bursty one? The answer is
+found with `lag_ceiling()`. Give it the table of totals and tell it how far
+back in time a delay is allowed to reach (`K = 4` means five census
+intervals). It finds the `period`, `reproduction` and `recruits` columns by
+name.
+
+```{r}
+ce <- lag_ceiling(totals, K = 4, kernels = lag_kernels(4))
+ce
+```
+
+Read the printout slowly. The line "reproduction (theorem bound)" repeats the
+Gini of reproduction. That number is the *ceiling*: no delay, of any shape,
+can make expected recruitment burstier than that. The line "observed
+recruitment" is the Gini of recruits. The last line divides one by the
+other: observed recruitment is many times burstier than any delay could make
+it.
+
+## Step 6. Draw it
+
+```{r}
+plot_ceiling_strip(`aseasonal, gated` = ce)
+```
+
+The strip is a ruler from 0 to 1. The blue tick is the ceiling. The orange
+dot is what was observed. The dot sits far to the right of the tick, in the
+region no delay can reach.
+
+## Step 7. See what a delay would actually predict
+
+Here are four possible delays. The first one is what most population models
+assume: seedlings appear one census after reproduction. The others spread the
+delay in different ways.
+
+```{r}
+delays <- list(
+  `one interval only` = c(1, 0, 0, 0, 0),
+  `early`             = c(.7, .2, .07, .03, 0),
+  `evenly spread`     = rep(.2, 5),
+  `late`              = c(0, .03, .07, .2, .7))
+plot_profiles(delays)
+```
+
+Now apply each of them to the real reproduction series and compare with the
+recruits that were counted:
+
+```{r}
+plot_expected(ce, delays)
+```
+
+The bars are the seedlings counted. The lines are what each delay predicts.
+All four lines are nearly flat and nearly on top of one another, and none of
+them goes anywhere near the three tall bars. This is the picture that the
+numbers in Step 5 summarise.
+
+## Step 8. The careful version of the test
+
+Step 5 compared the *average* that a delay predicts with the *counts* that
+were observed. Counts are noisy, and a noisy count series can look bursty
+even when its average is flat. The careful test takes that into account and
+also uses the fact that recruits were counted separately on 20 units. It
+works from the unit-by-period table `r` directly. It takes a few seconds
+because it simulates many count series.
+
+```{r}
+set.seed(1)
+ht <- host_lag_test(r, K = 4, nsim = 2000, kernels = lag_kernels(4))
+ht
+```
+
+The last lines are the verdict. For each way of measuring burstiness the test
+tried every delay it knows and reports the *best case for the delay
+hypothesis*: the largest probability, over all delays, of getting a record as
+bursty as the one observed. If even the best case is a very small number, no
+delay can explain the record. The full table, one row per delay, is in
+`ht$table`:
+
+```{r}
+ht$table |> select(label, phi, p_silent, p_gini, p_cv) |> arrange(desc(p_gini)) |> head()
+```
+
+## Step 9. Check yourself with a record where a delay is the truth
+
+The same data set has a record in which recruits really are a delayed
+consequence of reproduction. Repeat Steps 2, 3, 5 and 8 on it.
+
+```{r}
+r2 <- regimes |> filter(record == "aseasonal_delayed")
+ce2 <- lag_ceiling(r2, K = 4, kernels = lag_kernels(4))   # a unit-by-period table is summed for you
+ce2
+set.seed(1)
+ht2 <- host_lag_test(r2, K = 4, nsim = 2000, kernels = lag_kernels(4))
+ht2
+```
+
+Two things to notice. First, in the ceiling printout the observed Gini is
+again above the ceiling: counts are noisier than averages, so this on its own
+proves nothing (that is exactly why Step 8 exists). Second, in the careful
+test the best-case probabilities are now ordinary numbers, not tiny ones: the
+careful test does not reject a delay when a delay is the truth.
+
+## Step 10. The other way round: a seasonal plant
+
+Everything so far used a plant that reproduces steadily all year. Many
+plants do not: they flower in one season. Repeat Steps 2 to 5 on such a
+record and watch what changes.
+
+```{r}
+r3 <- regimes |> filter(record == "seasonal_delayed")
+totals3 <- r3 |> group_by(period) |>
+  summarise(reproduction = sum(reproduction),
+            recruits = if (all(is.na(recruits))) NA else sum(recruits))
+totals3$reproduction
+```
+
+Large numbers for a few periods, then almost nothing, then large again a
+year later. That is seasonal reproduction. Measure it:
+
+```{r}
+gini(totals3$reproduction)
+gini(totals3$recruits)
+```
+
+Reproduction now scores high on the burstiness scale, because it is
+concentrated in a season, and recruits score a little *lower* than
+reproduction. Now the ceiling:
+
+```{r}
+ce3 <- lag_ceiling(totals3, K = 4, kernels = lag_kernels(4))
+ce3
+plot_ceiling_strip(`aseasonal, gated` = ce, `seasonal, true delay` = ce3)
+```
+
+In the strip for the seasonal plant the orange dot sits to the *left* of the
+blue tick, inside the region a delay can reach. So a delay could have
+produced this record, and in this case one did: this record was built with a
+true delay.
+
+Here is the important part, so read it twice. A dot to the left of the tick
+does not prove there was a delay. It only says the test cannot rule one out.
+Try the seasonal record with the gate instead:
+
+```{r}
+r4 <- regimes |> filter(record == "seasonal_gated")
+ce4 <- lag_ceiling(r4, K = 4, kernels = lag_kernels(4))
+ce4
+plot_ceiling_strip(`seasonal, true delay` = ce3, `seasonal, gated` = ce4)
+```
+
+The gated record lands almost on the tick. With a seasonal plant, the true
+delay and the gate look nearly the same on the ruler, because the ceiling is
+so high that almost anything fits under it. The careful test of Step 8 does
+not help much here either:
+
+```{r}
+set.seed(1)
+host_lag_test(r4, K = 4, nsim = 2000, kernels = lag_kernels(4))
+```
+
+The best-case probabilities are ordinary numbers, even though we know this
+record was gated. That is not a failure of the test; it is the honest
+answer. When reproduction is seasonal, a burst of seedlings can always be
+explained as "the seeds from last season", and no census record can say
+otherwise.
+
+## Step 11. What the four cases teach
+
+You have now seen all four combinations. Keep this table in mind when you
+read your own results.
+
+| Reproduction | Recruits | Dot on the ruler | Careful test (Step 8) |
+|---|---|---|---|
+| steady all year | bursts (gated) | far right of the tick | tiny probabilities: no delay can explain it |
+| steady all year | true delay | right of the tick, but only because counts are noisy | ordinary probabilities: a delay is possible |
+| seasonal | true delay | left of the tick | ordinary: a delay is possible |
+| seasonal | bursts (gated) | near the tick | ordinary: cannot tell |
+
+The test can only say "no delay can explain this" when reproduction is
+steady. When reproduction is seasonal, it cannot say much either way. That
+is the whole reason the *Lepanthes* orchid in the `lepanthes_*` data sets is
+a good case: it flowers every month of the year.
+
+## Step 12. Your own data
+
+Put your census record in a table with one row per unit (host tree, plot,
+population) and period, and these columns: `unit`, `period` (an integer
+starting at 1), `reproduction` and `recruits` (with `NA` at periods where
+recruits were not scored). If your columns have other names, tell the
+functions with `unit = `, `period = `, `reproduction = ` and `recruits = `,
+as the *Lepanthes* vignette does. Then repeat Steps 3 to 8 with your table
+in place of `r`, and read your result against the table in Step 11. If your
+first lagged bin should be the census itself rather than the previous
+census, add `lag0 = 0` to `lag_ceiling()` and `host_lag_test()`.
