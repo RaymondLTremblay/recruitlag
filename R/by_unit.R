@@ -146,3 +146,88 @@ as.data.frame.lag_ceiling_list <- function(x, ...) {
                stringsAsFactors = FALSE)
   }))
 }
+
+#' Compare the ceiling across candidate reproductive measures
+#'
+#' A census usually offers several measures of reproduction: adults,
+#' reproductive plants, inflorescences, flowers, fruits, and rates derived
+#' from them. They do not give the same ceiling, and the choice can change
+#' the exceedance several fold, so it is a decision to report rather than to
+#' make quietly. `rain_indices()` runs [lag_ceiling()] once per candidate
+#' column and tabulates the result.
+#'
+#' @param data A data frame with one row per period, or per unit and period,
+#'   which is summed.
+#' @param reproduction Character vector of candidate reproductive columns.
+#' @param period,recruits Column names.
+#' @param K,lag0,kernels,missing As in [lag_ceiling()]. The same kernels are
+#'   used for every candidate, so the comparison is like for like.
+#'
+#' @return A data frame with one row per candidate: the concentration of that
+#'   reproductive series, the searched ceiling, the exceedance on both
+#'   indices, the kernel that attained the ceiling, and how many values of
+#'   that column were missing (and so read as zero).
+#'
+#' @section Scale and how to read it:
+#'
+#' Read the table down the `exceedance` column, and read it as a sensitivity
+#' analysis rather than as a menu. Two things drive the differences.
+#'
+#' **A stock gives a lower ceiling than a flux.** Adults change only by
+#' recruitment minus death, so the adult series is smooth whatever the plants
+#' are doing, and the exceedance computed from it is the largest available.
+#' It is the most favourable index to the paper's own argument and therefore
+#' the one to trust least.
+#'
+#' **Measurement error runs the other way, and protects the lag
+#' hypothesis.** A reproductive measure that is caught only sometimes, such
+#' as a fruit that persists a month against a six-month census, looks more
+#' erratic than the truth. That raises its concentration, raises the ceiling,
+#' and lowers the exceedance. So a badly observed index makes the test
+#' conservative, and a low exceedance from such a column is not evidence that
+#' the lag hypothesis survives.
+#'
+#' The consequence for reporting: give the whole table, say which columns are
+#' well observed in that particular study, and let the reader see the range.
+#' No index is the right one in general.
+#'
+#' @examples
+#' rain_indices(lepanthes_census, c("adults", "inflorescences", "flowers", "fruits"),
+#'              K = 4, kernels = lag_kernels(4, bin = 6, unit = "mo"))
+#' @export
+rain_indices <- function(data, reproduction, period = "period", recruits = "recruits",
+                         K, lag0 = 1L, kernels = lag_kernels(K),
+                         missing = c("backfill", "drop")) {
+  missing <- match.arg(missing)
+  data <- as.data.frame(data)
+  if (!is.character(reproduction) || !length(reproduction))
+    rl_abort("`reproduction` must be a character vector naming the candidate columns, ",
+             'for example c("n_adults", "n_inflorescences", "n_fruits").')
+  rl_check_columns(data, stats::setNames(c(period, recruits), c("period", "recruits")))
+  miss <- setdiff(reproduction, names(data))
+  if (length(miss))
+    rl_abort("These candidate reproductive columns are not in the data: ",
+             rl_list(miss), ".\nThe data frame has: ", rl_list(names(data), 12), ".")
+  rl_check_kernels(kernels, K)
+
+  do.call(rbind, lapply(reproduction, function(v) {
+    ce <- tryCatch(suppressWarnings(
+      lag_ceiling(data, period = period, reproduction = v, recruits = recruits,
+                  K = K, lag0 = lag0, kernels = kernels, missing = missing)),
+      error = function(e) e)
+    if (inherits(ce, "error"))
+      return(data.frame(index = v, gini = NA_real_, ceiling_gini = NA_real_,
+                        exceedance_gini = NA_real_, exceedance_cv = NA_real_,
+                        best_kernel = "no ceiling: lagged reproduction is zero throughout",
+                        n_missing = sum(is.na(data[[v]])),
+                        stringsAsFactors = FALSE))
+    data.frame(index = v,
+               gini = unname(ce$theorem["gini"]),
+               ceiling_gini = unname(ce$ceiling["gini"]),
+               exceedance_gini = unname(ce$exceedance["gini"]),
+               exceedance_cv = unname(ce$exceedance["cv"]),
+               best_kernel = ce$best$label,
+               n_missing = sum(is.na(data[[v]])),
+               stringsAsFactors = FALSE)
+  }))
+}
