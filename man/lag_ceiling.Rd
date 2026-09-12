@@ -72,7 +72,7 @@ counts, which \code{\link[=ceiling_calibration]{ceiling_calibration()}} evaluate
 
 
 \strong{\code{theorem}, \code{ceiling} and \code{obs}} are concentration indices, so they
-carry the scale of \code{\link[=gini]{gini()}} and \code{\link[=cv]{cv()}}: 0 for an even series, rising with
+carry the scale of \code{\link[=rain_gini]{rain_gini()}} and \code{\link[=rain_cv]{rain_cv()}}: 0 for an even series, rising with
 concentration, with a maximum of \eqn{(n-1)/n} and \eqn{\sqrt{n}}{sqrt(n)}
 respectively that depends on the number of scored periods. \code{theorem} is
 the bound derived from the reproductive series itself; \code{ceiling} is the

@@ -98,7 +98,7 @@ tibble(record = names(ceilings),
 ```
 
 ```{r, fig.height = 5}
-plot_ceiling_strip(ceilings)
+rain_strip(ceilings)
 ```
 
 Two rows of the table carry the lesson. Under seasonal reproduction the

@@ -18,7 +18,7 @@ test_that("expected recruits and the moment phi match the paper for named kernel
     mu <- expected_recruits(h$R, h$X, w)
     expect_equal(rowSums(mu), rowSums(h$R))        # scaled to each host's total
     expect_equal(phi_moment(h$R, mu), ref$phi_moment[ref$label == lab], tolerance = 1e-10)
-    expect_equal(gini(colSums(mu)), ref$gini_expected_totals[ref$label == lab], tolerance = 1e-10)
+    expect_equal(rain_gini(colSums(mu)), ref$gini_expected_totals[ref$label == lab], tolerance = 1e-10)
   }
 })
 

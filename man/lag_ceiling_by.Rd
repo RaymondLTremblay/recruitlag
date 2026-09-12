@@ -44,7 +44,7 @@ biology.}
 A named list of \code{lag_ceiling} objects, of class
 \code{lag_ceiling_list}, with the skipped units and the reason in
 \code{attr(, "skipped")}. It can be passed straight to
-\code{\link[=plot_ceiling_strip]{plot_ceiling_strip()}}, and \code{as.data.frame()} gives one row per unit.
+\code{\link[=rain_strip]{rain_strip()}}, and \code{as.data.frame()} gives one row per unit.
 }
 \description{
 Runs \code{\link[=lag_ceiling]{lag_ceiling()}} once per replicate unit (population, plot, host tree)

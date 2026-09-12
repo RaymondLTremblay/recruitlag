@@ -17,8 +17,8 @@ the full account under "Scale and how to read it".
 
 \tabular{lll}{
 \strong{Quantity (function)} \tab \strong{Range} \tab \strong{Reading} \cr
-\code{gini} (\code{\link[=gini]{gini()}}) \tab 0 to \eqn{(n-1)/n} \tab 0 is even; the maximum is reached when one period holds the whole total. The maximum depends on the number of periods, so compare only series of equal length. \cr
-\code{cv} (\code{\link[=cv]{cv()}}) \tab 0 to \eqn{\sqrt{n}}{sqrt(n)} \tab As for \code{gini}, computed with the \code{n - 1} divisor of \code{\link[stats:sd]{stats::sd()}}. \cr
+\code{gini} (\code{\link[=rain_gini]{rain_gini()}}) \tab 0 to \eqn{(n-1)/n} \tab 0 is even; the maximum is reached when one period holds the whole total. The maximum depends on the number of periods, so compare only series of equal length. \cr
+\code{cv} (\code{\link[=rain_cv]{rain_cv()}}) \tab 0 to \eqn{\sqrt{n}}{sqrt(n)} \tab As for \code{gini}, computed with the \code{n - 1} divisor of \code{\link[stats:sd]{stats::sd()}}. \cr
 \code{zeros} (\code{\link[=concentration]{concentration()}}) \tab 0 to \code{n} \tab Periods with no count at all. \cr
 \code{max_share} (\code{\link[=concentration]{concentration()}}) \tab \eqn{1/n} to 1 \tab Share of the total falling in the largest single period. \cr
 weights \code{w} (\code{\link[=lag_kernels]{lag_kernels()}}) \tab sum to 1 \tab How memory is spread over the horizon, never how much recruitment there is. \cr

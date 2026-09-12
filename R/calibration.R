@@ -89,7 +89,7 @@ ceiling_calibration <- function(x, vmr = NULL, nsim = 20000L) {
   m1 <- m1 * mu / mean(m1)
   sim <- function(mu_vec) {
     M <- matrix(stats::rnbinom(nsim * n, size = phi, mu = rep(mu_vec, each = nsim)), nsim, n)
-    data.frame(gini = apply(M, 1, gini), cv = apply(M, 1, cv), zeros = rowSums(M == 0))
+    data.frame(gini = apply(M, 1, rain_gini), cv = apply(M, 1, rain_cv), zeros = rowSums(M == 0))
   }
   s0 <- sim(rep(mu, n)); s1 <- sim(m1)
   obs <- concentration(R)

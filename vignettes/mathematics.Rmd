@@ -112,7 +112,7 @@ If $X$ is nearly constant, $W X$ is nearly constant for every $W$, and the
 data carry almost no information about $w$. A distributed-lag model fitted
 to such data returns its prior, however long the series runs; the fitted
 profile in `lepanthes$lag_profile` is close to flat for that reason.
-`plot_expected()` makes the point visually: profiles that could not differ
+`rain_expected()` makes the point visually: profiles that could not differ
 more give expected series that all but coincide.
 
 ## 4. Calibrating the pooled comparison
@@ -192,7 +192,7 @@ the invented records show; aseasonality is where it bites.
 
 | Step | Function | Companion-paper phase |
 |---|---|---|
-| Concentration indices | `gini()`, `cv()`, `concentration()` | Table of series |
+| Concentration indices | `rain_gini()`, `rain_cv()`, `concentration()` | Table of series |
 | Lag profiles | `lag_kernels()`, `flat_kernel()` | 9a, 9d |
 | From a long data frame to series and matrices | `series_from()`, `host_matrices()` | data preparation |
 | Expected series | `convolve_lag()` | 9a, 9b |
@@ -200,4 +200,4 @@ the invented records show; aseasonality is where it bites.
 | Pooled calibration | `ceiling_calibration()` | 9b |
 | Unit-level expectation and clumping | `expected_recruits()`, `phi_moment()` | 9d |
 | Host-level test | `host_lag_test()` | 9d |
-| Figures | `plot_series()`, `plot_ceiling_strip()`, `plot_profiles()`, `plot_expected()`, `plot()` methods | Figs 2, 3 and 5 |
+| Figures | `rain_series()`, `rain_strip()`, `rain_profiles()`, `rain_expected()`, `plot()` methods | Figs 2, 3 and 5 |

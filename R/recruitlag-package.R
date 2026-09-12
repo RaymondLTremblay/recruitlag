@@ -8,8 +8,8 @@
 #'
 #' \tabular{lll}{
 #'   **Quantity (function)** \tab **Range** \tab **Reading** \cr
-#'   `gini` ([gini()]) \tab 0 to \eqn{(n-1)/n} \tab 0 is even; the maximum is reached when one period holds the whole total. The maximum depends on the number of periods, so compare only series of equal length. \cr
-#'   `cv` ([cv()]) \tab 0 to \eqn{\sqrt{n}}{sqrt(n)} \tab As for `gini`, computed with the `n - 1` divisor of [stats::sd()]. \cr
+#'   `gini` ([rain_gini()]) \tab 0 to \eqn{(n-1)/n} \tab 0 is even; the maximum is reached when one period holds the whole total. The maximum depends on the number of periods, so compare only series of equal length. \cr
+#'   `cv` ([rain_cv()]) \tab 0 to \eqn{\sqrt{n}}{sqrt(n)} \tab As for `gini`, computed with the `n - 1` divisor of [stats::sd()]. \cr
 #'   `zeros` ([concentration()]) \tab 0 to `n` \tab Periods with no count at all. \cr
 #'   `max_share` ([concentration()]) \tab \eqn{1/n} to 1 \tab Share of the total falling in the largest single period. \cr
 #'   weights `w` ([lag_kernels()]) \tab sum to 1 \tab How memory is spread over the horizon, never how much recruitment there is. \cr

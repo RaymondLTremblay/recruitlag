@@ -11,7 +11,7 @@
 #' @param x A numeric vector of non-negative counts or rates, one per period.
 #'   `NA` values are dropped.
 #'
-#' @return `gini()` and `cv()` return a single number (`NA` when the series
+#' @return `rain_gini()` and `rain_cv()` return a single number (`NA` when the series
 #'   sums to zero). `concentration()` returns a named numeric vector with
 #'   `n`, `mean`, `gini`, `cv`, `zeros` (number of periods with a zero count)
 #'   and `max_share` (the largest single period's share of the total).
@@ -34,7 +34,7 @@
 #' \eqn{(n-1)/n}, reached when one period carries the whole total: 0.900 on
 #' the 10 scored six-monthly censuses, 0.955 on the 22 scored monthly
 #' periods. The ceiling of 1 is a limit as `n` grows and is never attained by
-#' a finite series (Damgaard and Weiner 2000). `cv()` uses the `n - 1`
+#' a finite series (Damgaard and Weiner 2000). `rain_cv()` uses the `n - 1`
 #' divisor of [stats::sd()], so its maximum on `n` periods is \eqn{\sqrt{n}}{sqrt(n)}:
 #' 3.16 and 4.69 for the same two series. A Gini of 0.65 therefore means
 #' something different on 10 periods than on 100, and values are comparable
@@ -44,7 +44,7 @@
 #'
 #' **Bias correction is deliberately not applied.** Damgaard and Weiner
 #' (2000) recommend multiplying the sample Gini by \eqn{n/(n-1)} for an
-#' unbiased estimate. `gini()` returns the uncorrected value because every
+#' unbiased estimate. `rain_gini()` returns the uncorrected value because every
 #' use of it here is a ratio or a rank between series of equal length, in
 #' which a common factor cancels. Multiply by \eqn{n/(n-1)} yourself if you
 #' want an estimate of the population value.
@@ -89,35 +89,35 @@
 #' \doi{10.1007/978-0-387-68276-1}
 #'
 #' @examples
-#' gini(c(5, 5, 5, 5))          # 0: perfectly even
-#' gini(c(0, 0, 0, 20))         # 0.75, which is (n - 1) / n: the maximum on 4 periods
-#' gini(c(0, 0, 0, 0, 0, 20))   # 0.833: the same series shape, more periods, higher maximum
-#' cv(c(0, 0, 0, 20))           # 2: the maximum on 4 periods is sqrt(4)
+#' rain_gini(c(5, 5, 5, 5))          # 0: perfectly even
+#' rain_gini(c(0, 0, 0, 20))         # 0.75, which is (n - 1) / n: the maximum on 4 periods
+#' rain_gini(c(0, 0, 0, 0, 0, 20))   # 0.833: the same series shape, more periods, higher maximum
+#' rain_cv(c(0, 0, 0, 20))           # 2: the maximum on 4 periods is sqrt(4)
 #'
 #' # the two Lepanthes records, each read against its own n
 #' concentration(lepanthes_census$recruits)   # n = 10, so Gini can reach 0.900
 #' concentration(lepanthes_monthly$recruits)  # n = 22, so Gini can reach 0.955
 #' @export
-gini <- function(x) {
+rain_gini <- function(x) {
   x <- sort(as.numeric(x[!is.na(x)]))
   n <- length(x); s <- sum(x)
   if (n == 0 || s == 0) return(NA_real_)
   2 * sum(seq_len(n) * x) / (n * s) - (n + 1) / n
 }
 
-#' @rdname gini
+#' @rdname rain_gini
 #' @export
-cv <- function(x) {
+rain_cv <- function(x) {
   x <- as.numeric(x[!is.na(x)])
   if (length(x) < 2 || mean(x) == 0) return(NA_real_)
   stats::sd(x) / mean(x)
 }
 
-#' @rdname gini
+#' @rdname rain_gini
 #' @export
 concentration <- function(x) {
   x <- as.numeric(x[!is.na(x)])
-  c(n = length(x), mean = mean(x), gini = gini(x), cv = cv(x),
+  c(n = length(x), mean = mean(x), gini = rain_gini(x), cv = rain_cv(x),
     zeros = sum(x == 0),
     max_share = if (sum(x) > 0) max(x) / sum(x) else NA_real_)
 }

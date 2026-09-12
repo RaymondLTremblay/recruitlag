@@ -62,7 +62,7 @@ lags), and observed recruitment exceeds the ceiling by a factor of about 10
 (monthly) and 2.5 (six-monthly).
 
 ```{r}
-plot_ceiling_strip(`monthly 1994` = c_m, `six-monthly 1999-2004` = c_6)
+rain_strip(`monthly 1994` = c_m, `six-monthly 1999-2004` = c_6)
 ```
 
 ## What any lag profile predicts
@@ -74,8 +74,8 @@ profiles <- list(
   `evenly spread (6 to 30 months)` = rep(.2, 5),
   `concentrated late (24 to 30 months)` = c(0, .03, .07, .2, .7),
   `fitted posterior mean` = lepanthes_profile$weight)
-plot_profiles(profiles, bin = 6, unit = "months")
-plot_expected(c_6, profiles)
+rain_profiles(profiles, bin = 6, unit = "months")
+rain_expected(c_6, profiles)
 ```
 
 The expected series all but coincide and follow the slow decline of

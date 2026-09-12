@@ -61,7 +61,7 @@ test_that("convolve_lag follows the census convention", {
 })
 
 test_that("gini behaves at the extremes", {
-  expect_equal(gini(rep(3, 8)), 0)
-  expect_equal(gini(c(0, 0, 0, 20)), 0.75)
-  expect_true(is.na(gini(c(0, 0))))
+  expect_equal(rain_gini(rep(3, 8)), 0)
+  expect_equal(rain_gini(c(0, 0, 0, 20)), 0.75)
+  expect_true(is.na(rain_gini(c(0, 0))))
 })

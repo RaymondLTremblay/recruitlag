@@ -43,7 +43,7 @@
 #' @section Scale and how to read it:
 #'
 #' **`theorem`, `ceiling` and `obs`** are concentration indices, so they
-#' carry the scale of [gini()] and [cv()]: 0 for an even series, rising with
+#' carry the scale of [rain_gini()] and [rain_cv()]: 0 for an even series, rising with
 #' concentration, with a maximum of \eqn{(n-1)/n} and \eqn{\sqrt{n}}{sqrt(n)}
 #' respectively that depends on the number of scored periods. `theorem` is
 #' the bound derived from the reproductive series itself; `ceiling` is the
@@ -117,18 +117,18 @@ lag_ceiling <- function(X, R = NULL, t_R = NULL, K, lag0 = 1L,
   res <- vapply(kernels, function(k) {
     o <- convolve_lag(X, k$w, t_R, lag0, missing)
     o <- o[!is.na(o)]
-    c(gini(o), cv(o))
+    c(rain_gini(o), rain_cv(o))
   }, numeric(2))
   search <- tibble::tibble(label = vapply(kernels, function(k) k$label, character(1)),
                            family = vapply(kernels, function(k) k$family, character(1)),
                            gini = res[1, ], cv = res[2, ])
   ib <- which.max(search$gini)
   structure(list(
-    obs = c(gini = gini(R), cv = cv(R)),
-    theorem = c(gini = gini(X), cv = cv(X)),
+    obs = c(gini = rain_gini(R), cv = rain_cv(R)),
+    theorem = c(gini = rain_gini(X), cv = rain_cv(X)),
     ceiling = c(gini = max(search$gini, na.rm = TRUE), cv = max(search$cv, na.rm = TRUE)),
-    exceedance = c(gini = gini(R) / max(search$gini, na.rm = TRUE),
-                   cv = cv(R) / max(search$cv, na.rm = TRUE)),
+    exceedance = c(gini = rain_gini(R) / max(search$gini, na.rm = TRUE),
+                   cv = rain_cv(R) / max(search$cv, na.rm = TRUE)),
     best = list(label = search$label[ib], family = search$family[ib], w = kernels[[ib]]$w),
     search = search,
     X = X, R = R, t_R = t_R, K = K, lag0 = lag0, missing = missing

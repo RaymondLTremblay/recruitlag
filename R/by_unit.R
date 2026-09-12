@@ -30,7 +30,7 @@
 #' @return A named list of `lag_ceiling` objects, of class
 #'   `lag_ceiling_list`, with the skipped units and the reason in
 #'   `attr(, "skipped")`. It can be passed straight to
-#'   [plot_ceiling_strip()], and `as.data.frame()` gives one row per unit.
+#'   [rain_strip()], and `as.data.frame()` gives one row per unit.
 #'
 #' @section Scale and how to read it:
 #'

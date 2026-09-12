@@ -278,15 +278,15 @@ host_lag_test <- function(R, X = NULL, K, lag0 = 1L,
   chk <- check_host_inputs(R, X); X <- chk$X
   stopifnot(inherits(kernels, "lag_kernels"), attr(kernels, "K") == K)
   Tn <- ncol(R); tot <- colSums(R)
-  obs <- c(silent = sum(tot == 0), gini = gini(tot), cv = cv(tot), max = max(tot))
+  obs <- c(silent = sum(tot == 0), gini = rain_gini(tot), cv = rain_cv(tot), max = max(tot))
   sim_stats <- function(mu, ph) {
     M <- matrix(0L, nsim, Tn)
     for (h in seq_len(nrow(mu))) if (any(mu[h, ] > 0))
       M <- M + matrix(stats::rnbinom(nsim * Tn, size = ph, mu = rep(mu[h, ], each = nsim)), nsim, Tn)
     z <- rowSums(M == 0)
     c(p_silent = mean(z >= obs["silent"]),
-      p_gini = mean(apply(M, 1, gini) >= obs["gini"], na.rm = TRUE),
-      p_cv = mean(apply(M, 1, cv) >= obs["cv"], na.rm = TRUE),
+      p_gini = mean(apply(M, 1, rain_gini) >= obs["gini"], na.rm = TRUE),
+      p_cv = mean(apply(M, 1, rain_cv) >= obs["cv"], na.rm = TRUE),
       p_max = mean(apply(M, 1, max) >= obs["max"]),
       median_silent = stats::median(z))
   }
@@ -298,7 +298,7 @@ host_lag_test <- function(R, X = NULL, K, lag0 = 1L,
       ph <- if (src == "moment") ph_m else phis[[src]]
       s <- sim_stats(mu, ph)
       data.frame(label = label, family = family, phi_source = src, phi = ph,
-                 gini_expected = gini(colSums(mu)),
+                 gini_expected = rain_gini(colSums(mu)),
                  p_silent = s[["p_silent"]], p_gini = s[["p_gini"]], p_cv = s[["p_cv"]],
                  p_max = s[["p_max"]], median_silent = s[["median_silent"]],
                  stringsAsFactors = FALSE)

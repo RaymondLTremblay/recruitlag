@@ -91,11 +91,11 @@ coefficient. 0 means every census had the same count. Close to 1 means almost
 everything happened at one census.
 
 ```{r}
-gini(totals$reproduction)
-gini(totals$recruits)
+rain_gini(totals$reproduction)
+rain_gini(totals$recruits)
 ```
 
-(`gini()` ignores the `NA`s.) Reproduction scores very low: it is spread
+(`rain_gini()` ignores the `NA`s.) Reproduction scores very low: it is spread
 evenly. Recruits score high: they are concentrated in a few censuses. Write
 those two numbers down.
 
@@ -122,7 +122,7 @@ it.
 ## Step 6. Draw it
 
 ```{r}
-plot_ceiling_strip(`aseasonal, gated` = ce)
+rain_strip(`aseasonal, gated` = ce)
 ```
 
 The strip is a ruler from 0 to 1. The blue tick is the ceiling. The orange
@@ -141,14 +141,14 @@ delays <- list(
   `early`             = c(.7, .2, .07, .03, 0),
   `evenly spread`     = rep(.2, 5),
   `late`              = c(0, .03, .07, .2, .7))
-plot_profiles(delays)
+rain_profiles(delays)
 ```
 
 Now apply each of them to the real reproduction series and compare with the
 recruits that were counted:
 
 ```{r}
-plot_expected(ce, delays)
+rain_expected(ce, delays)
 ```
 
 The bars are the seedlings counted. The lines are what each delay predicts.
@@ -220,8 +220,8 @@ Large numbers for a few periods, then almost nothing, then large again a
 year later. That is seasonal reproduction. Measure it:
 
 ```{r}
-gini(totals3$reproduction)
-gini(totals3$recruits)
+rain_gini(totals3$reproduction)
+rain_gini(totals3$recruits)
 ```
 
 Reproduction now scores high on the burstiness scale, because it is
@@ -231,7 +231,7 @@ reproduction. Now the ceiling:
 ```{r}
 ce3 <- lag_ceiling(totals3, K = 4, kernels = lag_kernels(4))
 ce3
-plot_ceiling_strip(`aseasonal, gated` = ce, `seasonal, true delay` = ce3)
+rain_strip(`aseasonal, gated` = ce, `seasonal, true delay` = ce3)
 ```
 
 In the strip for the seasonal plant the orange dot sits to the *left* of the
@@ -247,7 +247,7 @@ Try the seasonal record with the gate instead:
 r4 <- regimes |> filter(record == "seasonal_gated")
 ce4 <- lag_ceiling(r4, K = 4, kernels = lag_kernels(4))
 ce4
-plot_ceiling_strip(`seasonal, true delay` = ce3, `seasonal, gated` = ce4)
+rain_strip(`seasonal, true delay` = ce3, `seasonal, gated` = ce4)
 ```
 
 The gated record lands almost on the tick. With a seasonal plant, the true

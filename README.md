@@ -42,7 +42,7 @@ lepanthes_hosts         # the same survey, one row per host tree and census
 k  <- lag_kernels(K = 4, n_dirichlet = 2000, bin = 6, unit = "mo")
 ce <- lag_ceiling(lepanthes_census, reproduction = "inflorescences", K = 4, kernels = k)
 ce
-plot_ceiling_strip(`six-monthly 1999-2004` = ce)
+rain_strip(`six-monthly 1999-2004` = ce)
 
 # 2. what the pooled comparison can refute (nothing, here)
 ceiling_calibration(ce)
@@ -60,8 +60,8 @@ pr <- list(`one interval only (projection-matrix null)` = c(1, 0, 0, 0, 0),
            `concentrated early` = c(.7, .2, .07, .03, 0),
            `evenly spread` = rep(.2, 5),
            `concentrated late` = c(0, .03, .07, .2, .7))
-plot_profiles(pr, bin = 6, unit = "months")
-plot_expected(ce, pr)
+rain_profiles(pr, bin = 6, unit = "months")
+rain_expected(ce, pr)
 ```
 
 Your own record goes in as a tibble with columns `unit`, `period` (an

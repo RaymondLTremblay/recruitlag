@@ -17,9 +17,9 @@ rl_theme <- function(base_size = 11)
 #' @examples
 #' ce <- lag_ceiling(lepanthes_census, reproduction = "inflorescences", K = 4,
 #'                   kernels = lag_kernels(4, bin = 6, unit = "mo"))
-#' plot_series(ce, unit = "census")
+#' rain_series(ce, unit = "census")
 #' @export
-plot_series <- function(x, unit = "period") {
+rain_series <- function(x, unit = "period") {
   stopifnot(inherits(x, "lag_ceiling"))
   d <- rbind(
     data.frame(series = sprintf("reproduction, Gini %.2f (the ceiling)", x$theorem["gini"]),
@@ -50,9 +50,9 @@ plot_series <- function(x, unit = "period") {
 #' c6 <- lag_ceiling(lepanthes_census, reproduction = "inflorescences", K = 4, kernels = k6)
 #' c1 <- lag_ceiling(lepanthes_monthly, reproduction = "reproductive_adults", K = 6, lag0 = 0,
 #'                   kernels = k1)
-#' plot_ceiling_strip(`monthly 1994` = c1, `six-monthly 1999-2004` = c6)
+#' rain_strip(`monthly 1994` = c1, `six-monthly 1999-2004` = c6)
 #' @export
-plot_ceiling_strip <- function(..., index = c("gini", "cv")) {
+rain_strip <- function(..., index = c("gini", "cv")) {
   index <- match.arg(index)
   objs <- list(...)
   if (length(objs) == 1 && is.list(objs[[1]]) && !inherits(objs[[1]], "lag_ceiling")) objs <- objs[[1]]
@@ -103,8 +103,8 @@ plot_ceiling_strip <- function(..., index = c("gini", "cv")) {
 
 #' Lag profiles, and what they predict on the real record
 #'
-#' `plot_profiles()` draws a set of lag profiles as lollipops.
-#' `plot_expected()` applies them to the reproductive record of a
+#' `rain_profiles()` draws a set of lag profiles as lollipops.
+#' `rain_expected()` applies them to the reproductive record of a
 #' `lag_ceiling` object, scales each expected series to the observed total,
 #' and draws them over the observed recruits. The point of the pair is that
 #' profiles which could not differ more give expected series that all but
@@ -121,12 +121,12 @@ plot_ceiling_strip <- function(..., index = c("gini", "cv")) {
 #'            `concentrated early` = c(.7, .2, .07, .03, 0),
 #'            `evenly spread` = rep(.2, 5),
 #'            `concentrated late` = c(0, .03, .07, .2, .7))
-#' plot_profiles(pr, bin = 6, unit = "months")
+#' rain_profiles(pr, bin = 6, unit = "months")
 #' ce <- lag_ceiling(lepanthes_census, reproduction = "inflorescences", K = 4,
 #'                   kernels = lag_kernels(4, bin = 6, unit = "mo"))
-#' plot_expected(ce, pr)
+#' rain_expected(ce, pr)
 #' @export
-plot_profiles <- function(profiles, bin = NULL, unit = "", lag0 = 1L) {
+rain_profiles <- function(profiles, bin = NULL, unit = "", lag0 = 1L) {
   pl <- as_profile_list(profiles)
   K <- length(pl[[1]]) - 1L
   d <- do.call(rbind, lapply(names(pl), function(nm)
@@ -147,12 +147,12 @@ plot_profiles <- function(profiles, bin = NULL, unit = "", lag0 = 1L) {
                    panel.grid.minor = ggplot2::element_blank())
 }
 
-#' @rdname plot_profiles
+#' @rdname rain_profiles
 #' @param x A `lag_ceiling` object supplying the reproductive record, the
 #'   recruit series and the lag convention.
 #' @param period Label for the time axis.
 #' @export
-plot_expected <- function(x, profiles, period = "census") {
+rain_expected <- function(x, profiles, period = "census") {
   stopifnot(inherits(x, "lag_ceiling"))
   pl <- as_profile_list(profiles)
   stopifnot(all(lengths(pl) == x$K + 1))
