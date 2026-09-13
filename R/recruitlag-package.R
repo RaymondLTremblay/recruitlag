@@ -17,6 +17,9 @@
 #'   `rho` ([lag_kernels()]) \tab 0 to 1 \tab Geometric decay. Near 0 puts all weight on the first bin, near 1 approaches equal weights. \cr
 #'   `theorem`, `ceiling` ([lag_ceiling()]) \tab as `gini` and `cv` \tab Reproduction's own concentration, which no delay can exceed. \cr
 #'   `exceedance` ([lag_ceiling()]) \tab above 0, centred on 1 \tab 1 is exactly at the bound; above 1 is more concentrated than any delay predicts. A description of the gap, not a test. \cr
+#'   `lower`, `upper` ([lag_ceiling_boot()]) \tab as the statistic \tab A confidence interval from resampling units, BCa by default; read in the usual way. \cr
+#'   `p_boot` ([lag_ceiling_boot()]) \tab 1/R to 1 \tab One-sided bootstrap p-value for exceedance at most 1. Not a posterior probability. \cr
+#'   `lower`, `upper`, `prob` ([lag_ceiling_bayesboot()], [lag_ceiling_stan()]) \tab as the statistic; 0 to 1 \tab A credible interval and `P(exceedance > 1)`, under a stated prior. The Bayesian bootstrap keeps the estimand of [lag_ceiling()]; the Stan model estimates the concentration of the expected series instead, which is lower. \cr
 #'   `vmr` ([ceiling_calibration()]) \tab above 1 \tab 1 is Poisson and larger is more clumped. Below 1 the negative binomial does not exist. \cr
 #'   `phi` ([phi_moment()]) \tab above 0 \tab Variance is \eqn{\mu + \mu^2/\phi}{mu + mu^2/phi}. Small is strongly clumped and very large is Poisson. Density dependent, so not comparable across means. \cr
 #'   `p_gini`, `p_cv`, `p_zeros` ([ceiling_calibration()]) \tab 0 to 1 \tab Fraction of simulated series at least as extreme as the observed one. Near 0.5 is ordinary. \cr

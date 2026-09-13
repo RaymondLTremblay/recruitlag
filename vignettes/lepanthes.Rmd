@@ -86,6 +86,51 @@ indistinguishable from the rest, which is the identification problem the
 paper describes: with a flat input the lag cannot be recovered, however long
 the series.
 
+## How firm the exceedance is
+
+The ceiling is arithmetic and carries no uncertainty. The two concentration
+indices it is compared with are estimates from ten censuses, and so is their
+ratio, and a reader is entitled to an interval on them. The package gives
+three, because they answer differently worded questions and a user should
+take the one whose logic they accept.
+
+The first resamples the 23 host trees with replacement, rebuilds both series
+from the resampled trees, and recomputes the ceiling and the exceedance in
+each replicate. It is a confidence interval, BCa by default, and is read in
+the usual way. The share of replicates at or below 1 is reported as what it
+is, a one-sided bootstrap p-value, and not as a probability that the
+exceedance is at most 1.
+
+```{r}
+set.seed(20260913)
+k4 <- lag_kernels(4, bin = 6, unit = "mo")
+lag_ceiling_boot(lepanthes_hosts, unit = "host", reproduction = "inflorescences",
+                 K = 4, kernels = k4, R = 2000)
+```
+
+The second is Rubin's Bayesian bootstrap: Dirichlet weights over the hosts
+in place of resampling, and a posterior in place of a sampling distribution.
+The numbers are close to the first, which is expected; the difference is
+that `P(exceedance > 1)` is now a posterior probability under a stated
+prior and may be written as one.
+
+```{r}
+lag_ceiling_bayesboot(lepanthes_hosts, unit = "host", reproduction = "inflorescences",
+                      K = 4, kernels = k4, draws = 4000)
+```
+
+The third fits a negative-binomial model to the counts on every host at
+every census, with host and census effects, and puts the posterior of the
+**expected** series through the same ceiling arithmetic. That is the object
+the bound applies to, and its exceedance is lower than the raw one, because
+part of the concentration of small counts is sampling variation about a
+smoother mean. It needs `cmdstanr` and CmdStan, so it is not run here.
+
+```{r, eval = FALSE}
+lag_ceiling_stan(lepanthes_hosts, unit = "host", reproduction = "inflorescences",
+                 K = 4, kernels = k4)
+```
+
 ## Why the pooled comparison cannot decide
 
 ```{r}
