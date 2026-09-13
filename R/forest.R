@@ -159,9 +159,9 @@ rain_forest <- function(..., .list = NULL, index = c("gini", "cv", "both"),
   brk <- c(0.25, 0.5, 1, 2, 4, 8, 16, 32); brk <- brk[brk >= lo / 2 & brk <= hi * 2]
   ggplot2::ggplot(d, ggplot2::aes(.data$estimate, .data$record, colour = .data$method, shape = .data$method)) +
     ggplot2::geom_vline(xintercept = 1, colour = rl_grey, linewidth = 0.7) +
-    ggplot2::geom_errorbarh(ggplot2::aes(xmin = .data$lower, xmax = .data$upper),
-                            height = 0.25, position = ggplot2::position_dodge(width = 0.6),
-                            linewidth = 0.6, na.rm = TRUE) +
+    ggplot2::geom_errorbar(ggplot2::aes(xmin = .data$lower, xmax = .data$upper),
+                           width = 0.25, position = ggplot2::position_dodge(width = 0.6),
+                           linewidth = 0.6, na.rm = TRUE, orientation = "y") +
     ggplot2::geom_point(size = 2.6, position = ggplot2::position_dodge(width = 0.6)) +
     ggplot2::scale_x_log10(breaks = brk) +
     ggplot2::scale_colour_manual(values = c(`cluster bootstrap` = rl_blue, `Bayesian bootstrap` = rl_verm,
