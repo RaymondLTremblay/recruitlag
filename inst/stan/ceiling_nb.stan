@@ -1,5 +1,5 @@
 // Negative-binomial model of the recruit counts on every unit at every scored
-// period, with a unit effect and a period effect on the log scale, so that
+// period at which that unit was censused, with a unit effect and a period effect on the log scale, so that
 // the concentration of the EXPECTED recruitment series, the object the
 // ceiling actually bounds, can be given a posterior. Only the recruits are
 // modelled: the reproductive record is the driver the hypothesis names, and
@@ -22,24 +22,15 @@ functions {
 data {
   int<lower=1> H;                    // units
   int<lower=1> J;                    // scored recruit periods
-  array[H, J] int<lower=0> R;        // recruits, units by scored periods
+  int<lower=1> N;                    // observed unit-by-period cells (a cell not censused is absent, not zero)
+  array[N] int<lower=0> Rf;          // recruit count in each observed cell
+  array[N] int<lower=1, upper=H> hh; // its unit
+  array[N] int<lower=1, upper=J> jj; // its period
   real mr;                           // prior centre of the intercept (log scale)
   real<lower=0> sigma_scale;         // scale of the half-t priors on the effect sds
   real<lower=0> phi_shape;           // gamma prior on the clumping parameter
   real<lower=0> phi_rate;
   int<lower=0> grainsize;            // 0: one vectorised call; > 0: reduce_sum slices of about this size
-}
-transformed data {
-  // the counts as one flat vector, with the unit and period of each cell, so
-  // that the likelihood is a single vectorised call rather than a loop
-  int N = H * J;
-  array[N] int<lower=0> Rf;
-  array[N] int<lower=1, upper=H> hh;
-  array[N] int<lower=1, upper=J> jj;
-  for (h in 1:H) for (j in 1:J) {
-    int n = (h - 1) * J + j;
-    Rf[n] = R[h, j]; hh[n] = h; jj[n] = j;
-  }
 }
 parameters {
   real a_r;

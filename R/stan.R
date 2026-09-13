@@ -87,6 +87,15 @@
 #' **The recruits must be counts.** A rate has no negative-binomial
 #' likelihood, and the function refuses it with a message.
 #'
+#' **Cells that were not censused are left out, not read as zero.** A unit
+#' with no row, or an `NA` recruit count, at a scored period contributes
+#' nothing to the likelihood for that period, whereas [lag_ceiling()] and
+#' the bootstraps read it as zero. The expected series is then the total
+#' the full set of units would have produced at every period, so on a
+#' record where the units visited varied between periods (the *Lepanthes*
+#' metapopulation, for instance) it is an effort-corrected series and can
+#' sit above the bootstraps, which count what was seen.
+#'
 #' **Read the sampler diagnostics before the interval.** Divergent
 #' transitions, an Rhat above about 1.01 or a bulk ESS below about 100 mean
 #' the posterior was not explored and the interval is not to be trusted. The
@@ -143,12 +152,14 @@ lag_ceiling_stan <- function(data, unit = "unit", period = "period",
     rl_abort("threads_per_chain must be a single whole number of 1 or more. It was given as ",
              paste(format(threads_per_chain), collapse = ", "), ".")
   threads_per_chain <- as.integer(threads_per_chain)
-  N <- nrow(su$R) * ncol(su$R)
-  stan_data <- list(H = nrow(su$R), J = ncol(su$R), R = unname(round(su$R)),
-                    mr = log(mean(su$R) + 0.5),
+  cells <- which(su$observed, arr.ind = TRUE)
+  N <- nrow(cells)
+  Rf <- as.integer(round(su$R[cells]))
+  stan_data <- list(H = nrow(su$R), J = ncol(su$R), N = N, Rf = Rf,
+                    hh = as.integer(cells[, 1]), jj = as.integer(cells[, 2]),
+                    mr = log(mean(Rf) + 0.5),
                     sigma_scale = sigma_scale, phi_shape = phi_prior[1], phi_rate = phi_prior[2],
                     grainsize = if (threads_per_chain > 1) max(1L, N %/% (4L * threads_per_chain)) else 0L)
-  storage.mode(stan_data$R) <- "integer"
   model <- stan_model_cached("ceiling_nb", threads = threads_per_chain > 1)
   args <- list(data = stan_data, chains = chains, parallel_chains = parallel_chains,
                iter_warmup = iter_warmup, iter_sampling = iter_sampling,

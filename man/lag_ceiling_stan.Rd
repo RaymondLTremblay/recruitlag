@@ -145,6 +145,15 @@ the ceiling is computed from.
 \strong{The recruits must be counts.} A rate has no negative-binomial
 likelihood, and the function refuses it with a message.
 
+\strong{Cells that were not censused are left out, not read as zero.} A unit
+with no row, or an \code{NA} recruit count, at a scored period contributes
+nothing to the likelihood for that period, whereas \code{\link[=lag_ceiling]{lag_ceiling()}} and
+the bootstraps read it as zero. The expected series is then the total
+the full set of units would have produced at every period, so on a
+record where the units visited varied between periods (the \emph{Lepanthes}
+metapopulation, for instance) it is an effort-corrected series and can
+sit above the bootstraps, which count what was seen.
+
 \strong{Read the sampler diagnostics before the interval.} Divergent
 transitions, an Rhat above about 1.01 or a bulk ESS below about 100 mean
 the posterior was not explored and the interval is not to be trusted. The

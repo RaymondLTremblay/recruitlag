@@ -77,7 +77,18 @@ uncertainty_setup <- function(data, unit, period, reproduction, recruits, K, lag
     rl_abort(what, " found only one unit (", rownames(hm$R)[1], "). Resampling one unit ",
              "gives the same series every time, so there is no interval to compute.")
   t_R <- as.integer(colnames(hm$R))
-  list(R = hm$R, X = hm$X, t_R = t_R, W = as.matrix(kernels),
+  # Which unit-by-period cells were actually censused. host_matrices() reads
+  # an absent or NA recruit cell as zero, which is what the ceiling and the
+  # bootstraps use; the model route needs to know the difference, because a
+  # cell that was not visited carries no information and must not enter the
+  # likelihood as a zero.
+  observed <- matrix(FALSE, nrow(hm$R), ncol(hm$R), dimnames = dimnames(hm$R))
+  present <- !is.na(data[[recruits]])
+  ij <- cbind(match(as.character(data[[unit]])[present], rownames(hm$R)),
+              match(as.integer(data[[period]])[present], t_R))
+  ij <- ij[stats::complete.cases(ij), , drop = FALSE]
+  observed[ij] <- TRUE
+  list(R = hm$R, X = hm$X, t_R = t_R, W = as.matrix(kernels), observed = observed,
        li = lag_index(t_R, K, lag0, missing), n_units = nrow(hm$R))
 }
 
