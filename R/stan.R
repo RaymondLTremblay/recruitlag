@@ -246,15 +246,18 @@ stan_model_cached <- function(name, threads = FALSE) {
   else cmdstanr::cmdstan_model(dst, quiet = TRUE)
 }
 
-# The negative binomial is a distribution for counts: whole, non-negative.
-check_counts <- function(M, column, role) {
+# The negative binomial is a distribution for counts: whole, non-negative. Used by every
+# function that simulates or models counts; `why` names the caller's reason.
+check_counts <- function(M, column, role,
+                         why = paste0("lag_ceiling_stan() fits a negative-binomial model, which is a ",
+                                      "distribution for counts, so the recruits must be whole numbers.")) {
   v <- M[!is.na(M)]
   bad <- v[v != round(v)]
   if (length(bad))
     rl_abort('The ', role, ' column "', column, '" has non-whole values (',
-             rl_list(format(utils::head(sort(unique(bad)), 4))), "). lag_ceiling_stan() fits a ",
-             "negative-binomial model, which is a distribution for counts, so the recruits must ",
-             "be whole numbers. If this column is a rate, pass the count it was made from ",
-             "instead. The two bootstrap functions accept rates.")
+             rl_list(format(utils::head(sort(unique(bad)), 4))), "). ", why,
+             " If this column is a rate, a biomass or a model estimate, pass the count it was ",
+             "made from instead; lag_ceiling() and the two bootstrap functions accept any ",
+             "non-negative series, because the concentration indices are scale-free.")
   invisible(TRUE)
 }

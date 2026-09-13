@@ -14,3 +14,15 @@ test_that("the pooled calibration reproduces the paper's phi and p-values", {
   # the pooled comparison has no power: neither null is refuted
   expect_gt(min(cal$p_gini), 0.1)
 })
+
+test_that("ceiling_calibration() and host_lag_test() refuse recruit series that are not counts", {
+  k <- lag_kernels(2, n_dirichlet = 20, bin = 1, unit = "yr")
+  ce <- lag_ceiling(c(10, 12, 9, 11, 10, 13, 9, 10), R = c(1.5, 30.2, 2.1, 0.4, 8.8, 1.2), t_R = 3:8,
+                    K = 2, lag0 = 0, kernels = k)
+  expect_equal(unname(ce$exceedance["gini"]) > 1, TRUE)          # the ceiling itself is scale-free
+  expect_error(ceiling_calibration(ce, nsim = 10), "non-whole values")
+  d <- data.frame(unit = rep(c("a", "b"), each = 6), period = rep(1:6, 2), reproduction = 10,
+                  recruits = c(1.5, 2, 0, 3, 1, 0, 2, 2, 1.2, 0, 4, 1))
+  expect_error(host_lag_test(d, K = 1, lag0 = 0, kernels = lag_kernels(1, bin = 1, unit = "yr"), nsim = 10),
+               "non-whole values")
+})

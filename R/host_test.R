@@ -296,6 +296,8 @@ host_lag_test <- function(R, X = NULL, K, lag0 = 1L,
   missing <- match.arg(missing)
   if (is.data.frame(R)) { hm <- host_matrices(R, unit, period, reproduction, recruits); R <- hm$R; X <- hm$X }
   chk <- check_host_inputs(R, X); X <- chk$X
+  check_counts(R, recruits, "recruit",
+               "host_lag_test() simulates recruit counts under the null, so the recruits must be whole numbers.")
   rl_check_kernels(kernels, K)
   Tn <- ncol(R); tot <- colSums(R)
   obs <- c(silent = sum(tot == 0), gini = rain_gini(tot), cv = rain_cv(tot), max = max(tot))

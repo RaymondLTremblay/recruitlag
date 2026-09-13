@@ -82,6 +82,8 @@
 ceiling_calibration <- function(x, vmr = NULL, nsim = 20000L) {
   rl_check_class(x, "lag_ceiling", "x", "lag_ceiling()")
   R <- x$R; n <- length(R); mu <- mean(R)
+  check_counts(R, "recruits", "recruit",
+               "ceiling_calibration() simulates counts about the expected series, so the recruits must be whole numbers.")
   if (is.null(vmr)) vmr <- stats::var(R) / mu
   if (vmr <= 1)
     rl_abort("The recruit counts have a variance-to-mean ratio of ", signif(vmr, 3),
