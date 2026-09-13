@@ -253,11 +253,16 @@ print.recruit_triage <- function(x, ...) {
   fs <- x$first
   if (!is.null(fs$expected_returns)) {
     fs$expected_returns <- round(fs$expected_returns, 2); fs$excess <- round(fs$excess, 1)
+    print(fs, row.names = FALSE)
+    cat("  first_seen: plants seen for the first time at that period. expected_returns: how many of them the\n",
+        " record's own dormancy accounts for, from plants present but unseen at period 1. excess: the rest,\n",
+        " which is recruitment plus search effort, and the record cannot tell which.\n", sep = "")
+  } else {
+    print(fs[, setdiff(names(fs), "periods_watched_before")], row.names = FALSE)
+    cat("  first_seen: plants seen for the first time at that period. No survival and resighting rates were\n",
+        " given (s =, r =, or species =), so the returns from dormancy these first sightings could contain\n",
+        " are not estimated.\n", sep = "")
   }
-  print(fs, row.names = FALSE)
-  cat("  first_seen: plants seen for the first time at that period. expected_returns: how many of them the\n",
-      " record's own dormancy accounts for, from plants present but unseen at period 1. excess: the rest,\n",
-      " which is recruitment plus search effort, and the record cannot tell which.\n", sep = "")
   invisible(x)
 }
 
