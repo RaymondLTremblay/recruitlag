@@ -92,12 +92,14 @@ test_that("lag_ceiling_stan() needs cmdstanr and refuses rates", {
                                   K = 4, kernels = k), "cmdstanr|CmdStan")
     skip("cmdstanr or CmdStan not available")
   }
-  d <- lepanthes_hosts; d$rate <- d$inflorescences / pmax(d$adults, 1)
-  expect_error(lag_ceiling_stan(d, unit = "host", reproduction = "rate", K = 4, kernels = k),
-               "non-whole values")
+  d <- lepanthes_hosts; d$rate <- d$recruits / pmax(d$adults, 1)
+  expect_error(lag_ceiling_stan(d, unit = "host", reproduction = "inflorescences", recruits = "rate",
+                                K = 4, kernels = k), "non-whole values")
+  expect_error(lag_ceiling_stan(lepanthes_hosts, unit = "host", reproduction = "inflorescences",
+                                K = 4, kernels = k, phi_prior = 2), "shape and rate")
   skip_on_cran()
   st <- lag_ceiling_stan(lepanthes_hosts, unit = "host", reproduction = "inflorescences",
-                         K = 4, kernels = k, chains = 2, iter_warmup = 300, iter_sampling = 300,
+                         K = 4, kernels = k, chains = 2, iter_warmup = 500, iter_sampling = 300,
                          seed = 1, refresh = 0)
   expect_s3_class(st, "lag_ceiling_draws")
   expect_equal(st$method, "stan")

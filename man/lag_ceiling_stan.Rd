@@ -14,11 +14,15 @@ lag_ceiling_stan(
   lag0 = 1L,
   kernels = lag_kernels(K),
   missing = c("backfill", "drop"),
-  ceiling_from = c("expected", "observed"),
   chains = 4,
-  iter_warmup = 1000,
-  iter_sampling = 1000,
+  parallel_chains = chains,
+  iter_warmup = 1500,
+  iter_sampling = 2000,
+  adapt_delta = 0.95,
+  max_treedepth = 12,
   seed = NULL,
+  sigma_scale = 1,
+  phi_prior = c(2, 0.1),
   level = 0.9,
   interval = c("eti", "hdi"),
   refresh = 0,
@@ -40,14 +44,21 @@ attain the bound, so random kernels can only add time.}
 
 \item{missing}{Treatment of pre-record lags (see \code{\link[=convolve_lag]{convolve_lag()}}).}
 
-\item{ceiling_from}{\code{"expected"} (the default) computes the ceiling from
-the posterior expected reproductive series, so that both sides of the
-ratio are treated alike and sampling noise is removed from both.
-\code{"observed"} keeps the reproductive record as observed and models only
-the recruits, which reads the record as the driver itself rather than
-as a noisy measurement of it.}
+\item{chains, iter_warmup, iter_sampling, seed, adapt_delta, max_treedepth}{Passed to CmdStan's sampler. The defaults are those of the companion
+paper's hierarchical recruitment model: a hierarchical model with a
+period effect that has to reach very low values at silent periods needs
+the higher target acceptance and the deeper trees.}
 
-\item{chains, iter_warmup, iter_sampling, seed}{Passed to CmdStan's sampler.}
+\item{parallel_chains}{Chains run at once; defaults to \code{chains}.}
+
+\item{sigma_scale}{Scale of the half-Student-t(3) priors on the two effect
+standard deviations.}
+
+\item{phi_prior}{Shape and rate of the gamma prior on the negative-binomial
+clumping parameter. The default \code{c(2, 0.1)} is the working prior of the
+companion paper, a placeholder pending elicitation; it keeps \code{phi} away
+from both 0 and infinity, which is what lets the sampler separate
+clumping from the period effect.}
 
 \item{level}{Coverage of the interval. The default 0.9 matches the 90\%
 credible intervals of the companion paper.}
@@ -57,15 +68,16 @@ credible intervals of the companion paper.}
 \item{refresh}{How often CmdStan reports progress; 0 is silent.}
 
 \item{...}{Further arguments to the \verb{$sample()} method of a
-\code{CmdStanModel}, such as \code{adapt_delta} or \code{parallel_chains}.}
+\code{CmdStanModel}.}
 }
 \value{
 An object of class \code{lag_ceiling_draws} with \code{method = "stan"}:
 \code{point} (the posterior median of each statistic), \code{draws} (one row per
 posterior draw), \code{table}, \code{prob} (\code{P(exceedance > 1)}), \code{diagnostics}
-(divergent transitions, largest Rhat and smallest bulk ESS over the
-model's parameters), \code{fit} (the \code{CmdStanMCMC} object, for anything the
-summary does not cover) and the inputs.
+(divergent transitions, transitions that hit the maximum tree depth,
+largest Rhat and smallest bulk ESS over the model's parameters), \code{fit}
+(the \code{CmdStanMCMC} object, for anything the summary does not cover) and
+the inputs.
 }
 \description{
 The bound applies to the \strong{expected} recruitment series: under any delay,
@@ -74,12 +86,14 @@ more concentrated than it. \code{\link[=lag_ceiling]{lag_ceiling()}} compares th
 realised counts, which are more concentrated than their own expectation
 whenever counts are small, and \code{\link[=ceiling_calibration]{ceiling_calibration()}} shows how much that
 inflates the exceedance. \code{lag_ceiling_stan()} estimates the object the
-bound is about. It fits a negative-binomial model to the unit-by-period
-counts of both records, with a unit effect and a period effect on the log
-scale, and hands the posterior of the expected system totals back to the
-same ceiling arithmetic as everywhere else in the package. The result is
-a posterior for the concentration of the expected recruitment series, for
-the ceiling, and for their ratio.
+bound is about. It fits a negative-binomial model to the recruit counts on
+every unit at every scored period, with a unit effect and a period effect
+on the log scale, and hands the posterior of the expected system totals to
+the same ceiling arithmetic as everywhere else in the package. The
+reproductive record enters as observed: it is the driver the hypothesis
+names, and the ceiling is computed from it exactly as in \code{\link[=lag_ceiling]{lag_ceiling()}}.
+The result is a posterior for the concentration of the expected
+recruitment series and for its ratio to the ceiling.
 }
 \section{Requirements}{
 
@@ -104,23 +118,32 @@ sampling variation about a smoother mean, and the difference between the
 two is itself informative: it is the share of the raw exceedance that the
 counts alone could have produced.
 
-\strong{What the model assumes.} Each record is a count with a unit effect and
-a period effect, additive on the log scale, partially pooled, with one
-clumping parameter per record. No lag is fitted and the two records are
-modelled independently; the ceiling is imposed afterwards, over the same
-kernels as \code{\link[=lag_ceiling]{lag_ceiling()}}. The period effects are what carry the
+\strong{What the model assumes.} The recruit count on a unit at a period is
+negative binomial with a unit effect and a period effect, additive on the
+log scale, partially pooled, and one clumping parameter. No lag is fitted;
+the ceiling is imposed afterwards, from the observed reproductive record,
+over the same kernels as \code{\link[=lag_ceiling]{lag_ceiling()}}. The period effects carry the
 concentration, so with few units per period they are shrunk toward each
 other and the estimated concentration is conservative, that is, it errs
 toward a lower exceedance.
 
-\strong{Both records must be counts.} A rate (inflorescences per adult, say)
-has no negative-binomial likelihood, and the function refuses it with a
-message. Pass the count the rate was made from.
+\strong{Why the reproductive record is not modelled too.} Modelling it and
+taking the ceiling from its expected series looks symmetrical, but the
+ceiling is then a modelled quantity that can shrink to zero when the
+reproductive period effects do, and the exceedance, a ratio, explodes.
+The hypothesis names the observed record as the driver, so that is what
+the ceiling is computed from.
+
+\strong{The recruits must be counts.} A rate has no negative-binomial
+likelihood, and the function refuses it with a message.
 
 \strong{Read the sampler diagnostics before the interval.} Divergent
-transitions or an Rhat above about 1.01 mean the posterior was not
-explored and the interval is not to be trusted; raise \code{adapt_delta} or
-the iterations. The printed summary carries the three numbers.
+transitions, an Rhat above about 1.01 or a bulk ESS below about 100 mean
+the posterior was not explored and the interval is not to be trusted. The
+function warns, and the printed summary carries the numbers. Transitions
+that hit the maximum tree depth are an efficiency warning, not a validity
+one, but many of them with a poor Rhat mean the chains sat in different
+regions.
 
 \strong{Equal-tailed or highest density.} As in \code{\link[=lag_ceiling_bayesboot]{lag_ceiling_bayesboot()}}: the
 equal-tailed interval is invariant to a change of scale and the

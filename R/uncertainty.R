@@ -414,8 +414,8 @@ print.lag_ceiling_draws <- function(x, digits = 3, ...) {
   }
   if (x$method == "stan" && !is.null(x$diagnostics)) {
     d <- x$diagnostics
-    cat(sprintf("  sampler: %d divergent transitions, max Rhat %.3f, min bulk ESS %.0f\n",
-                d$divergences, d$max_rhat, d$min_ess))
+    cat(sprintf("  sampler: %d divergent, %d at max treedepth, max Rhat %.3f, min bulk ESS %.0f\n",
+                d$divergences, d$max_treedepth, d$max_rhat, d$min_ess))
   }
   if (x$n_failed > 0)
     cat(sprintf("  %d of %d replicates could not compute every statistic and were left out\n",

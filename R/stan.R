@@ -6,32 +6,41 @@
 #' realised counts, which are more concentrated than their own expectation
 #' whenever counts are small, and [ceiling_calibration()] shows how much that
 #' inflates the exceedance. `lag_ceiling_stan()` estimates the object the
-#' bound is about. It fits a negative-binomial model to the unit-by-period
-#' counts of both records, with a unit effect and a period effect on the log
-#' scale, and hands the posterior of the expected system totals back to the
-#' same ceiling arithmetic as everywhere else in the package. The result is
-#' a posterior for the concentration of the expected recruitment series, for
-#' the ceiling, and for their ratio.
+#' bound is about. It fits a negative-binomial model to the recruit counts on
+#' every unit at every scored period, with a unit effect and a period effect
+#' on the log scale, and hands the posterior of the expected system totals to
+#' the same ceiling arithmetic as everywhere else in the package. The
+#' reproductive record enters as observed: it is the driver the hypothesis
+#' names, and the ceiling is computed from it exactly as in [lag_ceiling()].
+#' The result is a posterior for the concentration of the expected
+#' recruitment series and for its ratio to the ceiling.
 #'
 #' @inheritParams lag_ceiling_boot
-#' @param ceiling_from `"expected"` (the default) computes the ceiling from
-#'   the posterior expected reproductive series, so that both sides of the
-#'   ratio are treated alike and sampling noise is removed from both.
-#'   `"observed"` keeps the reproductive record as observed and models only
-#'   the recruits, which reads the record as the driver itself rather than
-#'   as a noisy measurement of it.
-#' @param chains,iter_warmup,iter_sampling,seed Passed to CmdStan's sampler.
+#' @param chains,iter_warmup,iter_sampling,seed,adapt_delta,max_treedepth
+#'   Passed to CmdStan's sampler. The defaults are those of the companion
+#'   paper's hierarchical recruitment model: a hierarchical model with a
+#'   period effect that has to reach very low values at silent periods needs
+#'   the higher target acceptance and the deeper trees.
+#' @param parallel_chains Chains run at once; defaults to `chains`.
+#' @param sigma_scale Scale of the half-Student-t(3) priors on the two effect
+#'   standard deviations.
+#' @param phi_prior Shape and rate of the gamma prior on the negative-binomial
+#'   clumping parameter. The default `c(2, 0.1)` is the working prior of the
+#'   companion paper, a placeholder pending elicitation; it keeps `phi` away
+#'   from both 0 and infinity, which is what lets the sampler separate
+#'   clumping from the period effect.
 #' @param interval `"eti"` or `"hdi"`, as in [lag_ceiling_bayesboot()].
 #' @param refresh How often CmdStan reports progress; 0 is silent.
 #' @param ... Further arguments to the `$sample()` method of a
-#'   `CmdStanModel`, such as `adapt_delta` or `parallel_chains`.
+#'   `CmdStanModel`.
 #'
 #' @return An object of class `lag_ceiling_draws` with `method = "stan"`:
 #'   `point` (the posterior median of each statistic), `draws` (one row per
 #'   posterior draw), `table`, `prob` (`P(exceedance > 1)`), `diagnostics`
-#'   (divergent transitions, largest Rhat and smallest bulk ESS over the
-#'   model's parameters), `fit` (the `CmdStanMCMC` object, for anything the
-#'   summary does not cover) and the inputs.
+#'   (divergent transitions, transitions that hit the maximum tree depth,
+#'   largest Rhat and smallest bulk ESS over the model's parameters), `fit`
+#'   (the `CmdStanMCMC` object, for anything the summary does not cover) and
+#'   the inputs.
 #'
 #' @section Requirements:
 #'
@@ -53,23 +62,32 @@
 #' two is itself informative: it is the share of the raw exceedance that the
 #' counts alone could have produced.
 #'
-#' **What the model assumes.** Each record is a count with a unit effect and
-#' a period effect, additive on the log scale, partially pooled, with one
-#' clumping parameter per record. No lag is fitted and the two records are
-#' modelled independently; the ceiling is imposed afterwards, over the same
-#' kernels as [lag_ceiling()]. The period effects are what carry the
+#' **What the model assumes.** The recruit count on a unit at a period is
+#' negative binomial with a unit effect and a period effect, additive on the
+#' log scale, partially pooled, and one clumping parameter. No lag is fitted;
+#' the ceiling is imposed afterwards, from the observed reproductive record,
+#' over the same kernels as [lag_ceiling()]. The period effects carry the
 #' concentration, so with few units per period they are shrunk toward each
 #' other and the estimated concentration is conservative, that is, it errs
 #' toward a lower exceedance.
 #'
-#' **Both records must be counts.** A rate (inflorescences per adult, say)
-#' has no negative-binomial likelihood, and the function refuses it with a
-#' message. Pass the count the rate was made from.
+#' **Why the reproductive record is not modelled too.** Modelling it and
+#' taking the ceiling from its expected series looks symmetrical, but the
+#' ceiling is then a modelled quantity that can shrink to zero when the
+#' reproductive period effects do, and the exceedance, a ratio, explodes.
+#' The hypothesis names the observed record as the driver, so that is what
+#' the ceiling is computed from.
+#'
+#' **The recruits must be counts.** A rate has no negative-binomial
+#' likelihood, and the function refuses it with a message.
 #'
 #' **Read the sampler diagnostics before the interval.** Divergent
-#' transitions or an Rhat above about 1.01 mean the posterior was not
-#' explored and the interval is not to be trusted; raise `adapt_delta` or
-#' the iterations. The printed summary carries the three numbers.
+#' transitions, an Rhat above about 1.01 or a bulk ESS below about 100 mean
+#' the posterior was not explored and the interval is not to be trusted. The
+#' function warns, and the printed summary carries the numbers. Transitions
+#' that hit the maximum tree depth are an efficiency warning, not a validity
+#' one, but many of them with a poor Rhat mean the chains sat in different
+#' regions.
 #'
 #' **Equal-tailed or highest density.** As in [lag_ceiling_bayesboot()]: the
 #' equal-tailed interval is invariant to a change of scale and the
@@ -94,33 +112,41 @@ lag_ceiling_stan <- function(data, unit = "unit", period = "period",
                              reproduction = "reproduction", recruits = "recruits",
                              K, lag0 = 1L, kernels = lag_kernels(K),
                              missing = c("backfill", "drop"),
-                             ceiling_from = c("expected", "observed"),
-                             chains = 4, iter_warmup = 1000, iter_sampling = 1000,
-                             seed = NULL, level = 0.9, interval = c("eti", "hdi"),
+                             chains = 4, parallel_chains = chains,
+                             iter_warmup = 1500, iter_sampling = 2000,
+                             adapt_delta = 0.95, max_treedepth = 12,
+                             seed = NULL, sigma_scale = 1, phi_prior = c(2, 0.1),
+                             level = 0.9, interval = c("eti", "hdi"),
                              refresh = 0, ...) {
   missing <- match.arg(missing); interval <- match.arg(interval)
-  ceiling_from <- match.arg(ceiling_from)
   check_level(level)
+  if (!is.numeric(phi_prior) || length(phi_prior) != 2 || any(phi_prior <= 0))
+    rl_abort("phi_prior must be two positive numbers, the shape and rate of the gamma prior ",
+             "on the clumping parameter, for example c(2, 0.1). It was given as ",
+             paste(format(phi_prior), collapse = ", "), ".")
+  if (!is.numeric(sigma_scale) || length(sigma_scale) != 1 || sigma_scale <= 0)
+    rl_abort("sigma_scale must be a single positive number, the scale of the half-t priors ",
+             "on the effect standard deviations. It was given as ",
+             paste(format(sigma_scale), collapse = ", "), ".")
   need_cmdstan()
   su <- uncertainty_setup(data, unit, period, reproduction, recruits, K, lag0, kernels,
                           missing, "lag_ceiling_stan()")
-  check_counts(su$X, reproduction, "reproduction")
   check_counts(su$R, recruits, "recruits")
 
-  stan_data <- list(H = nrow(su$X), T = ncol(su$X), J = ncol(su$R),
-                    X = unname(round(su$X)), R = unname(round(su$R)),
-                    mx = log(mean(su$X) + 0.5), mr = log(mean(su$R) + 0.5))
-  storage.mode(stan_data$X) <- "integer"; storage.mode(stan_data$R) <- "integer"
+  stan_data <- list(H = nrow(su$R), J = ncol(su$R), R = unname(round(su$R)),
+                    mr = log(mean(su$R) + 0.5),
+                    sigma_scale = sigma_scale, phi_shape = phi_prior[1], phi_rate = phi_prior[2])
+  storage.mode(stan_data$R) <- "integer"
   model <- stan_model_cached("ceiling_nb")
-  fit <- model$sample(data = stan_data, chains = chains, iter_warmup = iter_warmup,
-                      iter_sampling = iter_sampling, seed = seed, refresh = refresh, ...)
+  fit <- model$sample(data = stan_data, chains = chains, parallel_chains = parallel_chains,
+                      iter_warmup = iter_warmup, iter_sampling = iter_sampling,
+                      adapt_delta = adapt_delta, max_treedepth = max_treedepth,
+                      seed = seed, refresh = refresh, ...)
 
-  EX <- fit$draws("EX", format = "draws_matrix")
   ER <- fit$draws("ER", format = "draws_matrix")
   X_obs <- colSums(su$X)
   D <- t(vapply(seq_len(nrow(ER)), function(i) {
-    Xi <- if (ceiling_from == "expected") as.numeric(EX[i, ]) else X_obs
-    ceiling_stats(Xi, as.numeric(ER[i, ]), su$li, su$W)
+    ceiling_stats(X_obs, as.numeric(ER[i, ]), su$li, su$W)
   }, numeric(6)))
   n_failed <- sum(!stats::complete.cases(D))
   ok <- stats::complete.cases(D)
@@ -128,7 +154,7 @@ lag_ceiling_stan <- function(data, unit = "unit", period = "period",
   tab <- interval_table(point, D, level, interval)
   prob <- c(gini = mean(D[ok, "exceedance_gini"] > 1), cv = mean(D[ok, "exceedance_cv"] > 1))
 
-  pars <- c("a_x", "a_r", "s_ux", "s_vx", "s_ur", "s_vr", "phi_x", "phi_r")
+  pars <- c("a_r", "s_ur", "s_vr", "phi_r")
   sm <- fit$summary(variables = pars)
   ds <- fit$diagnostic_summary(quiet = TRUE)
   diagnostics <- list(divergences = sum(ds$num_divergent),
@@ -136,18 +162,19 @@ lag_ceiling_stan <- function(data, unit = "unit", period = "period",
                       max_rhat = max(sm$rhat, na.rm = TRUE),
                       min_ess = min(sm$ess_bulk, na.rm = TRUE),
                       summary = sm)
-  if (diagnostics$divergences > 0 || diagnostics$max_rhat > 1.01)
-    rl_warn("The sampler reported ", diagnostics$divergences, " divergent transition(s) and a ",
+  if (diagnostics$divergences > 0 || diagnostics$max_rhat > 1.01 || diagnostics$min_ess < 100)
+    rl_warn("The sampler reported ", diagnostics$divergences, " divergent transition(s), a ",
             "largest Rhat of ", formatC(diagnostics$max_rhat, digits = 3, format = "f"),
-            ". The posterior may not have been explored; raise adapt_delta (for example ",
-            "adapt_delta = 0.95) or the iterations before reading the interval.")
+            " and a smallest bulk ESS of ", round(diagnostics$min_ess),
+            ". The posterior may not have been explored; raise iter_warmup and iter_sampling, ",
+            "or adapt_delta (up to 0.99), before reading the interval. If Rhat stays high, the ",
+            "chains are sitting in different regions: compare fit$summary() across chains.")
 
-  structure(list(method = "stan", estimand = paste0("expected series (ceiling from ",
-                                                    ceiling_from, " reproduction)"),
+  structure(list(method = "stan", estimand = "expected recruitment series over the observed ceiling",
                  point = point, draws = D, table = tab, prob = prob,
                  diagnostics = diagnostics, fit = fit,
                  n_units = su$n_units, R = nrow(D), n_failed = n_failed,
-                 level = level, type = interval, ceiling_from = ceiling_from,
+                 level = level, type = interval,
                  K = K, lag0 = lag0, missing = missing, kernels = kernels, t_R = su$t_R),
             class = "lag_ceiling_draws")
 }
@@ -189,8 +216,8 @@ check_counts <- function(M, column, role) {
   if (length(bad))
     rl_abort('The ', role, ' column "', column, '" has non-whole values (',
              rl_list(format(utils::head(sort(unique(bad)), 4))), "). lag_ceiling_stan() fits a ",
-             "negative-binomial model, which is a distribution for counts, so both records must ",
-             "be whole numbers. If this column is a rate such as inflorescences per adult, pass the ",
-             "count it was made from instead. The two bootstrap functions accept rates.")
+             "negative-binomial model, which is a distribution for counts, so the recruits must ",
+             "be whole numbers. If this column is a rate, pass the count it was made from ",
+             "instead. The two bootstrap functions accept rates.")
   invisible(TRUE)
 }
