@@ -1,0 +1,267 @@
+---
+title: "Reading the intervals: confidence, credible, and the four ways to cut one"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Reading the intervals: confidence, credible, and the four ways to cut one}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 3.6)
+```
+
+```{r, message = FALSE}
+library(recruitlag)
+```
+
+The package reports the exceedance, observed concentration over the
+ceiling, with an interval around it, and it offers three ways of making
+that interval. They give numbers that are usually close and sentences that
+are not interchangeable. This vignette says, as plainly as it can, what each
+interval is, what it is not, where each is strong and weak, and how to write
+the sentence that goes with it. It assumes no statistics beyond knowing what
+a percentile is.
+
+## The one distinction that matters
+
+Every interval here answers one of two questions, and they are different
+questions.
+
+**A confidence interval** answers: *if the same study were repeated many
+times, drawing a new set of units each time, and the interval were computed
+each time by this recipe, how often would the interval contain the true
+value?* The answer is the level, 90% here. The interval you have is one of
+those repetitions. It either contains the true value or it does not, and
+the 90% is a property of the recipe, not of this interval. That is the whole
+of it, and it is why the sentence "there is a 90% probability that the
+exceedance lies between 2.1 and 3.2" is not licensed by a confidence
+interval, however natural it sounds.
+
+**A credible interval** answers: *given the data and a stated prior, what is
+the probability that the true value lies in this range?* The answer is
+again the level, and now it is a probability about the value itself. The
+sentence above is licensed. The price is the prior: a credible interval is
+only as meaningful as the prior it was computed under, and the prior has to
+be named.
+
+The package labels every interval it returns, in the printed summary and in
+the `interval` and `method` columns of `ceiling_draws_table()`, so that the
+reader never has to guess which question was answered.
+
+## The three routes
+
+```{r, message = FALSE, warning = FALSE}
+set.seed(20260913)
+k <- lag_kernels(4, bin = 6, unit = "mo")
+b  <- lag_ceiling_boot(lepanthes_hosts, unit = "host", reproduction = "inflorescences",
+                       K = 4, kernels = k, R = 2000)
+bb <- lag_ceiling_bayesboot(lepanthes_hosts, unit = "host", reproduction = "inflorescences",
+                            K = 4, kernels = k, draws = 4000)
+knitr::kable(ceiling_draws_table(`cluster bootstrap` = b, `Bayesian bootstrap` = bb)[
+  , c("record", "quantity", "estimate", "lower", "upper", "interval", "probability", "probability_is")],
+  digits = 2)
+```
+
+### The cluster bootstrap: a confidence interval
+
+`lag_ceiling_boot()` takes the units of the study (host trees here), draws a
+sample of the same size from them **with replacement**, so that some units
+appear twice and some not at all, rebuilds both the reproductive series and
+the recruit series from that sample, and recomputes the exceedance. It does
+this 2,000 times. The spread of those 2,000 values is the bootstrap
+distribution, and the interval is cut from it.
+
+*What it assumes.* That the units are a sample from a larger population of
+units like them, and that they are independent of one another. It assumes
+nothing about the shape of the counts.
+
+*Where it is strong.* No model, no prior, no distributional assumption. The
+recipe is transparent: anyone can see exactly what was resampled.
+
+*Where it is weak.* It needs enough units. With five sites the bootstrap
+distribution has only a handful of distinct values, the interval is coarse,
+and the bias-corrected version can fail; the function warns below ten units
+and flags a failed row. It also cannot be applied to a series that has
+already been pooled over units, because there is nothing left to resample.
+
+*The sentence.* "The exceedance was 2.56 (90% confidence interval 2.1 to
+3.2, cluster bootstrap over host trees)."
+
+### The Bayesian bootstrap: a credible interval, same quantity
+
+`lag_ceiling_bayesboot()` does not resample the units. It gives each unit a
+random weight, drawn so that the weights are positive and sum to one (a
+Dirichlet(1, ..., 1) draw), rebuilds both series as weighted sums, and
+recomputes the exceedance; 4,000 times. This is Rubin's (1981) Bayesian
+bootstrap, and it is a posterior in the strict sense: the prior is a flat
+Dirichlet on the unknown distribution of units, which is the least
+informative prior available for that object, and the weights are draws from
+the posterior under it.
+
+*What it assumes.* The same as the cluster bootstrap, plus that flat prior.
+Because the prior is the same for every data set and puts no structure on
+the counts, it is rarely the thing a reader objects to.
+
+*Where it is strong.* The sentence may say "probability". `P(exceedance >
+1)` is a posterior probability, and the interval is a credible interval.
+Numerically it tracks the cluster bootstrap closely, because it is a
+smoothed version of the same idea, so nothing is lost in exchange.
+
+*Where it is weak.* Same as the cluster bootstrap on the number of units,
+though it degrades more gracefully because the weights are continuous. And
+the reader who does not accept Bayesian probability statements will read the
+interval as if it were a confidence interval, which is approximately right
+here and not something the package can prevent.
+
+*The sentence.* "The exceedance was 2.56 (90% credible interval 2.1 to 3.0,
+Bayesian bootstrap over host trees); the posterior probability that it
+exceeds 1 is above 0.999."
+
+### The negative-binomial model: a credible interval, different quantity
+
+`lag_ceiling_stan()` fits a model to the recruit counts on every unit at
+every period: each count is negative binomial, with a unit effect, a period
+effect and a clumping parameter. From the posterior it takes the *expected*
+recruit series, the series the counts scatter about, and puts that through
+the ceiling arithmetic. The reproductive record enters as observed.
+
+*What it assumes.* The model: negative-binomial counts, effects additive on
+the log scale, and priors on the effect scales and the clumping. The priors
+are those of the companion paper and are named in the help page; they are
+working priors, and both are arguments.
+
+*Where it is strong.* It estimates the object the ceiling actually bounds.
+A count series is always more concentrated than its own expectation, so the
+two bootstraps put an interval on a quantity that is inflated by sampling
+noise. This route removes that inflation and asks whether what remains
+still exceeds the bound. It is therefore the conservative reading, and the
+gap between its estimate and the bootstraps' is itself a number worth
+reporting: it is how much of the raw exceedance the counts alone could have
+produced.
+
+*Where it is weak.* It is a model, and it has to be checked: the function
+prints the sampler diagnostics (divergent transitions, Rhat, effective
+sample size) and warns when they are poor, and an interval from a poorly
+sampled posterior is not an interval. It needs `cmdstanr` and CmdStan
+installed. It refuses a reproductive rate, since the recruits must be
+counts. And because it estimates a different quantity, its interval is not
+a check on the other two: agreement is not expected, and disagreement is not
+a fault.
+
+*The sentence.* "The concentration of the expected recruit series exceeded
+the ceiling by a factor of 2.1 (90% credible interval 1.6 to 2.8,
+negative-binomial model with host and census effects); the posterior
+probability that it exceeds 1 is 0.99." (Illustrative numbers.)
+
+## The four ways to cut an interval from a set of draws
+
+Once a route has produced its 2,000 or 4,000 values, an interval is cut
+from them, and there are four recipes. Two are for the bootstrap and two are
+for posteriors; the package offers both of each and defaults to one.
+
+**Percentile.** The 5th and 95th percentiles of the values. The simplest
+recipe, and exact when the bootstrap distribution is centred on the estimate
+and symmetric. It is invariant to a change of scale: the 5th percentile of
+the log exceedance is the log of the 5th percentile of the exceedance, so it
+does not matter which scale you cut on.
+
+**BCa** (bias-corrected and accelerated; Efron 1987). The percentile
+interval with two corrections: one for the bootstrap distribution not being
+centred on the estimate (bias), one for its skew (acceleration, estimated
+from the leave-one-unit-out values). A ratio such as the exceedance is
+skewed, so BCa is the default for the cluster bootstrap. It is also
+invariant to a change of scale. Its cost is that with very few units the
+corrections have too little to work with and the interval can collapse or
+miss the estimate; the package flags that row instead of printing it.
+
+**Equal-tailed** (ETI). The percentile recipe applied to posterior draws: the
+central 90% of the posterior, 5% in each tail. Invariant to a change of
+scale, for the same reason as the percentile interval. The default for the
+two Bayesian routes.
+
+**Highest-density** (HDI). The shortest interval that holds 90% of the
+posterior. On a skewed posterior it is shorter than the equal-tailed
+interval and sits closer to the mode. Its drawback is the one that matters
+for a ratio: it is **not** invariant to a change of scale. The shortest 90%
+of the exceedance and the shortest 90% of its logarithm, transformed back,
+are different intervals, and the difference is visible on these data:
+
+```{r}
+ex <- bb$draws[, "exceedance_gini"]
+eti <- quantile(ex, c(0.05, 0.95))
+hdi <- function(v, level = 0.9) { v <- sort(v); n <- length(v); k <- floor(level * n)
+  w <- v[(k + 1):n] - v[1:(n - k)]; i <- which.min(w); c(v[i], v[i + k]) }
+rbind(`equal-tailed, on the ratio`       = eti,
+      `equal-tailed, on log, back`       = exp(quantile(log(ex), c(0.05, 0.95))),
+      `highest-density, on the ratio`    = hdi(ex),
+      `highest-density, on log, back`    = exp(hdi(log(ex))))
+```
+
+The two equal-tailed rows agree to the last digit, as they must. The two
+highest-density rows do not. An HDI is therefore a choice of scale as well
+as of recipe, and the package offers it (`interval = "hdi"`) so that a user
+who wants it can have it, with this paragraph as the reason it is not the
+default.
+
+## The two probability statements, side by side
+
+The cluster bootstrap reports `p_boot`, the fraction of replicates in which
+the exceedance was at most 1. The Bayesian routes report `prob`, the
+fraction of posterior draws in which it exceeded 1. In a table the two
+numbers can look like complements of each other. They are not the same kind
+of number.
+
+`p_boot` is a **one-sided bootstrap p-value**: the achieved significance
+level of a test of "the record is no more concentrated than a delay
+predicts". A small value is evidence against that hypothesis. It is not the
+probability that the hypothesis is true, and the sentence "the probability
+that the exceedance is at most 1 is 0.0005" is wrong. The printed summary
+says so under the number, because the misreading is easy and common. It
+also cannot be resolved below one over the number of replicates, so 0 is
+printed as "< 1/R".
+
+`prob` is a **posterior probability**, and the sentence "the probability
+that the exceedance exceeds 1 is 0.999, under a flat prior on the
+distribution of hosts" is exactly what it means.
+
+If you want the second sentence, use the route that is built to give it.
+Do not take the bootstrap's `p_boot`, subtract it from one, and call the
+result a probability.
+
+## Choosing, and reporting
+
+| you want | use | interval | says |
+|---|---|---|---|
+| no model, no prior, the standard recipe | `lag_ceiling_boot()` | BCa (or percentile), a confidence interval | "90% CI" |
+| a probability statement about the same quantity, minimal assumptions | `lag_ceiling_bayesboot()` | equal-tailed (or HDI), a credible interval | "90% CrI", `P(> 1)` |
+| the quantity the bound applies to, with sampling noise removed | `lag_ceiling_stan()` | equal-tailed (or HDI), a credible interval | "90% CrI", `P(> 1)`, and the sampler diagnostics |
+
+Whichever you choose, report the route and the recipe with the numbers,
+because the reader cannot tell them apart from the digits: "2.56 (90% BCa
+CI 2.1 to 3.2, cluster bootstrap over 23 host trees)" carries everything
+needed to read it, and "2.56 (2.1 to 3.2)" does not. `ceiling_draws_table()`
+carries those labels in its columns, and `rain_forest()` draws the routes
+side by side so that a disagreement between them, which is where the
+reading gets interesting, is seen rather than searched for.
+
+```{r, fig.height = 2.6}
+rain_forest(`L. eltoroensis, 23 hosts` = b, `L. eltoroensis, 23 hosts` = bb, index = "both")
+```
+
+## References
+
+Efron, B. (1987) Better bootstrap confidence intervals. *Journal of the
+American Statistical Association* 82: 171-185.
+
+DiCiccio, T. J. and Efron, B. (1996) Bootstrap confidence intervals.
+*Statistical Science* 11: 189-228.
+
+Davison, A. C. and Hinkley, D. V. (1997) *Bootstrap Methods and their
+Application*. Cambridge University Press.
+
+Rubin, D. B. (1981) The Bayesian bootstrap. *The Annals of Statistics* 9:
+130-134.
+
+Gelman, A., Carlin, J. B., Stern, H. S., Dunson, D. B., Vehtari, A. and
+Rubin, D. B. (2013) *Bayesian Data Analysis*, 3rd edn. Chapman and Hall.

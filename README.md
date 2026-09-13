@@ -124,14 +124,16 @@ not offered, because it asserts that no seed fell before the record began
 and turns a long pure delay into a prediction of no recruits at the first
 censuses.
 
-## Two data sets, four vignettes
+## Two data sets, five vignettes
 
 `lepanthes_monthly`, `lepanthes_census`, `lepanthes_hosts` and
 `lepanthes_profile` hold the census records of the paper; `regimes` holds six
 invented records in one long tibble (seasonal, intermediate and aseasonal reproduction, each
 with a true delay and with gated recruitment) that show where the test has
 power and where it does not. The vignettes are `baby-steps` (every step,
-no mathematics), `invented-regimes`, `lepanthes` and `mathematics` (the
+no mathematics), `invented-regimes`, `lepanthes`, `intervals` (what a confidence
+interval, a credible interval, BCa, percentile, equal-tailed and highest-density
+intervals are, and how to write the sentence for each) and `mathematics` (the
 theory and the functions that implement it): `browseVignettes("recruitlag")`.
 
 ## The function inventory
@@ -141,7 +143,7 @@ theory and the functions that implement it): `browseVignettes("recruitlag")`.
 | Schedule | `rain_intervals` |
 | Kernels | `lag_kernels`, `flat_kernel` |
 | The check | `lag_ceiling`, `lag_ceiling_by`, `rain_indices`, `ceiling_calibration`, `host_lag_test`, `host_matrices` |
-| Uncertainty on the exceedance | `lag_ceiling_boot` (cluster bootstrap, BCa or percentile), `lag_ceiling_bayesboot` (Bayesian bootstrap), `lag_ceiling_stan` (negative-binomial model of the counts, via `cmdstanr`) |
+| Uncertainty on the exceedance | `lag_ceiling_boot` (cluster bootstrap, BCa or percentile), `lag_ceiling_bayesboot` (Bayesian bootstrap), `lag_ceiling_stan` (negative-binomial model of the recruits, via `cmdstanr`); `ceiling_draws_table` (one table for several records and routes) and `rain_forest` (the forest plot of them) |
 | Quantities | `rain_gini`, `rain_cv`, `concentration`, `phi_moment`, `convolve_lag`, `expected_recruits`, `series_from` |
 | Figures | `rain_series`, `rain_strip`, `rain_strips`, `rain_profiles`, `rain_expected`, `rain_units`, and `plot()` methods for `ceiling_calibration` and `host_lag_test` |
 

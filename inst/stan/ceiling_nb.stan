@@ -22,6 +22,18 @@ data {
   real<lower=0> phi_shape;           // gamma prior on the clumping parameter
   real<lower=0> phi_rate;
 }
+transformed data {
+  // the counts as one flat vector, with the unit and period of each cell, so
+  // that the likelihood is a single vectorised call rather than a loop
+  int N = H * J;
+  array[N] int<lower=0> Rf;
+  array[N] int<lower=1, upper=H> hh;
+  array[N] int<lower=1, upper=J> jj;
+  for (h in 1:H) for (j in 1:J) {
+    int n = (h - 1) * J + j;
+    Rf[n] = R[h, j]; hh[n] = h; jj[n] = j;
+  }
+}
 parameters {
   real a_r;
   vector[H] zu_r;
@@ -41,8 +53,7 @@ model {
   s_ur ~ student_t(3, 0, sigma_scale);
   s_vr ~ student_t(3, 0, sigma_scale);
   phi_r ~ gamma(phi_shape, phi_rate);
-  for (h in 1:H)
-    R[h] ~ neg_binomial_2_log(a_r + u_r[h] + v_r, phi_r);
+  Rf ~ neg_binomial_2_log(a_r + u_r[hh] + v_r[jj], phi_r);
 }
 generated quantities {
   // expected system total at each scored period: the series whose

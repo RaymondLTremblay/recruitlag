@@ -138,10 +138,20 @@ lag_ceiling_stan <- function(data, unit = "unit", period = "period",
                     sigma_scale = sigma_scale, phi_shape = phi_prior[1], phi_rate = phi_prior[2])
   storage.mode(stan_data$R) <- "integer"
   model <- stan_model_cached("ceiling_nb")
-  fit <- model$sample(data = stan_data, chains = chains, parallel_chains = parallel_chains,
-                      iter_warmup = iter_warmup, iter_sampling = iter_sampling,
-                      adapt_delta = adapt_delta, max_treedepth = max_treedepth,
-                      seed = seed, refresh = refresh, ...)
+  args <- list(data = stan_data, chains = chains, parallel_chains = parallel_chains,
+               iter_warmup = iter_warmup, iter_sampling = iter_sampling,
+               adapt_delta = adapt_delta, max_treedepth = max_treedepth,
+               seed = seed, refresh = refresh, ...)
+  # With refresh = 0 the run is meant to be silent, so CmdStan's chain messages
+  # and the informational exceptions it prints during warmup are switched off
+  # too, where this version of cmdstanr allows it. They otherwise land in a
+  # rendered document by the dozen and say nothing a reader can use.
+  can <- names(formals(model$sample))
+  if (refresh == 0) {
+    if ("show_messages" %in% can && is.null(args$show_messages)) args$show_messages <- FALSE
+    if ("show_exceptions" %in% can && is.null(args$show_exceptions)) args$show_exceptions <- FALSE
+  }
+  fit <- do.call(model$sample, args)
 
   ER <- fit$draws("ER", format = "draws_matrix")
   X_obs <- colSums(su$X)

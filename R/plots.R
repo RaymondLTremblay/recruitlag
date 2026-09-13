@@ -249,6 +249,7 @@ as_profile_list <- function(profiles) {
 plot.ceiling_calibration <- function(x, ...) {
   sims <- attr(x, "sims"); obs <- attr(x, "obs"); ce <- attr(x, "ceiling")
   d <- do.call(rbind, lapply(names(sims), function(nm) data.frame(null = nm, gini = sims[[nm]]$gini)))
+  d <- d[is.finite(d$gini), , drop = FALSE]      # an all-zero simulated series has no Gini
   v <- data.frame(what = c("observed recruitment", "ceiling on the mean"),
                   x = c(unname(obs["gini"]), unname(ce["gini"])))
   ggplot2::ggplot(d, ggplot2::aes(.data$gini, fill = .data$null)) +

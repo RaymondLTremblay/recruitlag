@@ -122,3 +122,38 @@ test_that("few units warn, and a collapsed BCa row is flagged rather than printe
   expect_silent(lag_ceiling_boot(five, unit = "host", reproduction = "inflorescences",
                                  K = 4, kernels = k, R = 300, type = "percentile"))
 })
+
+test_that("ceiling_draws_table() stacks routes and names each probability, rain_forest() draws", {
+  set.seed(6)
+  b  <- lag_ceiling_boot(lepanthes_hosts, unit = "host", reproduction = "inflorescences",
+                         K = 4, kernels = k, R = 200)
+  bb <- lag_ceiling_bayesboot(lepanthes_hosts, unit = "host", reproduction = "inflorescences",
+                              K = 4, kernels = k, draws = 200)
+  tab <- ceiling_draws_table(`A` = b, `A` = bb)
+  expect_equal(nrow(tab), 4)
+  expect_setequal(unique(tab$method), c("cluster bootstrap", "Bayesian bootstrap"))
+  expect_true(all(tab$probability_is[tab$method == "cluster bootstrap"] == "one-sided bootstrap p for exceedance <= 1"))
+  expect_true(all(tab$probability_is[tab$method == "Bayesian bootstrap"] == "P(exceedance > 1)"))
+  expect_equal(nrow(ceiling_draws_table(.list = list(x = b), quantity = "all")), 6)
+  expect_error(ceiling_draws_table(), "at least one")
+  expect_error(ceiling_draws_table(a = 1), "not lag_ceiling_draws")
+  expect_error(ceiling_draws_table(a = b, quantity = "nope"), "quantity must be")
+  p <- rain_forest(`A` = b, `A` = bb, index = "both")
+  expect_s3_class(p, "ggplot")
+  expect_s3_class(rain_forest(.list = list(A = b), order = "name"), "ggplot")
+})
+
+test_that("a unit with a flat reproductive record gets NA, not Inf, and many skipped units are summarised", {
+  d <- lepanthes_hosts
+  h1 <- unique(d$host)[1]
+  d$inflorescences[d$host == h1] <- 5                     # perfectly flat: ceiling 0
+  ces <- suppressWarnings(lag_ceiling_by(d, unit = "host", reproduction = "inflorescences", K = 4, kernels = k))
+  df <- as.data.frame(ces)
+  expect_true(is.na(df$exceedance_gini[df$unit == as.character(h1)]))
+  expect_match(df$best_kernel[df$unit == as.character(h1)], "undefined")
+  expect_false(any(is.infinite(df$exceedance_gini)))
+  ces2 <- suppressWarnings(lag_ceiling_by(lepanthes_hosts, unit = "host", reproduction = "inflorescences",
+                                          K = 4, kernels = k, min_recruits = 8))
+  expect_gt(length(attr(ces2, "skipped")), 10)
+  expect_output(print(ces2), "of 23 units skipped")
+})

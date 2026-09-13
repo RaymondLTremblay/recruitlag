@@ -36,6 +36,8 @@ R/
   uncertainty.R    lag_ceiling_boot(), lag_ceiling_bayesboot(), the shared
                    interval arithmetic and the lag_ceiling_draws methods
   stan.R           lag_ceiling_stan(); the model is inst/stan/ceiling_nb.stan
+  forest.R         ceiling_draws_table() and rain_forest(): one table and one
+                   figure for several records and routes
   concentration.R  rain_gini(), rain_cv(), concentration(), phi_moment()
   convolve.R       convolve_lag(), expected_recruits(), series_from()
   kernels.R        lag_kernels(), flat_kernel()
@@ -81,6 +83,8 @@ users: each says what it estimates and what its interval means.
 | `lag_ceiling_stan(unit = )` | exceedance of the **expected** recruitment series over the OBSERVED ceiling, from a negative-binomial model of the recruits with unit and period effects (phase 4d priors: half-t(3,0,1) sds, phi ~ gamma(2, 0.1); adapt_delta 0.95, max_treedepth 12, warmup 1500) | equal-tailed or HDI | `prob`, as above. Usually lower than the other two, because sampling noise is removed. Needs `cmdstanr` (Suggests) and CmdStan; compiles into `tools::R_user_dir("recruitlag", "cache")` on first use; refuses rates because the NB is a distribution for counts |
 
 **Do not model the reproductive record in the Stan route.** The first version did, for symmetry, and took the ceiling from the modelled series; when the reproductive period effects shrank to zero the ceiling went to zero and the exceedance (a ratio) printed as 5.8e14, with Rhat 1.59 and ESS 7 on both the 23-host and the 7-population records. The hypothesis names the observed record as the driver, so the ceiling is computed from it as observed and only the recruits are modelled. The 1/sqrt(phi) ~ half-normal parameterisation was also dropped for the 4d gamma(2, 0.1), which keeps phi off both boundaries.
+
+`ceiling_draws_table(...)` stacks any number of named `lag_ceiling_draws` objects into one tidy table (record, method, quantity, estimate, lower, upper, interval, probability, probability_is), for `knitr::kable()`. `rain_forest(...)` is the forest plot of the exceedance intervals, log axis, line at 1, one row per record and one point per route. The `intervals` vignette explains CI vs CrI, BCa, percentile, ETI, HDI, `p_boot` and `P(> 1)` for a reader with no statistics.
 
 All three resample or model **units**, so a pooled series without a unit
 column is refused with a message pointing to `lag_ceiling()`. The BCa
@@ -160,6 +164,8 @@ column, and what to do, never the usual opaque R error.
 - **Sentinel values.** Field workbooks code missing data as `999`, `-999` or
   `Nsurv`. The strings fail loudly; `999` does not, and read as a count it is
   catastrophic. The package cannot detect it. Recode at extraction.
+
+**Rendered-document hygiene (2026-09-13).** `lag_ceiling_stan()` passes `show_messages = FALSE, show_exceptions = FALSE` when `refresh = 0`, so CmdStan's warmup chatter no longer lands in a Quarto document. `as.data.frame.lag_ceiling_list()` returns `NA` (with a note in `best_kernel`) for a unit whose reproductive record is flat, where it used to print `Inf`. `print.lag_ceiling_list()` summarises skipped units by reason when there are more than ten. `plot.ceiling_calibration()` drops non-finite simulated Ginis before binning.
 
 ## 7. Building and checking
 

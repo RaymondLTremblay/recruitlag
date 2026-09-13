@@ -125,8 +125,19 @@ print.lag_ceiling_list <- function(x, digits = 3, ...) {
     cat(sprintf("  %d row(s) dropped as unwatched periods (no reproduction and no recruits)\n", dr))
   sk <- attr(x, "skipped")
   if (length(sk)) {
-    cat(sprintf("\n%d unit(s) skipped:\n", length(sk)))
-    for (nm in names(sk)) cat(sprintf("  %-12s %s\n", nm, sk[[nm]]))
+    if (length(sk) <= 10) {
+      cat(sprintf("\n%d unit(s) skipped:\n", length(sk)))
+      for (nm in names(sk)) cat(sprintf("  %-12s %s\n", nm, sk[[nm]]))
+    } else {
+      # Many skipped units: give the reasons with their counts, and say where
+      # the full list is, rather than print a page of unit names.
+      reason <- sub("^[0-9.]+ (recruits|periods)", "\\1", sk)
+      reason <- sub("^every kernel gives an all-zero expected series.*", "lagged reproduction zero throughout", reason)
+      tab <- sort(table(reason), decreasing = TRUE)
+      cat(sprintf("\n%d of %d units skipped:\n", length(sk), length(sk) + length(x)))
+      for (r in names(tab)) cat(sprintf("  %3d  %s\n", tab[[r]], r))
+      cat("  (attr(x, \"skipped\") names each unit and its reason)\n")
+    }
   }
   invisible(x)
 }
@@ -135,14 +146,19 @@ print.lag_ceiling_list <- function(x, digits = 3, ...) {
 as.data.frame.lag_ceiling_list <- function(x, ...) {
   do.call(rbind, lapply(names(x), function(nm) {
     o <- x[[nm]]
+    # A unit whose reproductive record is perfectly flat has a ceiling of 0 and
+    # an exceedance of observed / 0. That is not a large exceedance, it is a
+    # unit on which the ratio is undefined, and it is reported as such.
+    ex_g <- unname(o$exceedance["gini"]); ex_c <- unname(o$exceedance["cv"])
+    flat <- is.finite(unname(o$ceiling["gini"])) && unname(o$ceiling["gini"]) == 0
     data.frame(unit = nm,
                n = length(o$R),
                mean_recruits = mean(o$R),
                ceiling_gini = unname(o$ceiling["gini"]),
                observed_gini = unname(o$obs["gini"]),
-               exceedance_gini = unname(o$exceedance["gini"]),
-               exceedance_cv = unname(o$exceedance["cv"]),
-               best_kernel = o$best$label,
+               exceedance_gini = if (flat) NA_real_ else ex_g,
+               exceedance_cv = if (flat) NA_real_ else ex_c,
+               best_kernel = if (flat) "ceiling 0: reproduction flat, exceedance undefined" else o$best$label,
                stringsAsFactors = FALSE)
   }))
 }
@@ -215,12 +231,22 @@ rain_indices <- function(data, reproduction, period = "period", recruits = "recr
       lag_ceiling(data, period = period, reproduction = v, recruits = recruits,
                   K = K, lag0 = lag0, kernels = kernels, missing = missing)),
       error = function(e) e)
-    if (inherits(ce, "error"))
+    if (inherits(ce, "error")) {
+      msg <- conditionMessage(ce)
+      # Only the all-zero case is a property of this candidate column and
+      # belongs in the table as a result. Anything else is wrong with the call
+      # or with the data as a whole, is wrong for every candidate, and would be
+      # mislabelled if it were reported as "lagged reproduction is zero".
+      if (!grepl("all-zero expected series", msg, fixed = TRUE))
+        rl_abort("rain_indices() failed on the candidate column \"", v, "\", and the ",
+                 "reason is not specific to that column, so the whole table would be ",
+                 "wrong. The underlying error was:\n  ", sub("\n", "\n  ", msg))
       return(data.frame(index = v, gini = NA_real_, ceiling_gini = NA_real_,
                         exceedance_gini = NA_real_, exceedance_cv = NA_real_,
                         best_kernel = "no ceiling: lagged reproduction is zero throughout",
                         n_missing = sum(is.na(data[[v]])),
                         stringsAsFactors = FALSE))
+    }
     data.frame(index = v,
                gini = unname(ce$theorem["gini"]),
                ceiling_gini = unname(ce$ceiling["gini"]),
