@@ -16,6 +16,7 @@ lag_ceiling_stan(
   missing = c("backfill", "drop"),
   chains = 4,
   parallel_chains = chains,
+  threads_per_chain = 1,
   iter_warmup = 1500,
   iter_sampling = 2000,
   adapt_delta = 0.95,
@@ -50,6 +51,13 @@ period effect that has to reach very low values at silent periods needs
 the higher target acceptance and the deeper trees.}
 
 \item{parallel_chains}{Chains run at once; defaults to \code{chains}.}
+
+\item{threads_per_chain}{Threads within each chain. Above 1 the likelihood
+is split across threads with Stan's \code{reduce_sum}, and the model is
+compiled with threading on (once, cached separately). Worth it for
+records with many units, such as a thousand patches; on a small record
+it only adds overhead. \code{chains * threads_per_chain} should not exceed the
+cores available.}
 
 \item{sigma_scale}{Scale of the half-Student-t(3) priors on the two effect
 standard deviations.}

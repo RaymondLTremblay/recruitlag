@@ -13,6 +13,12 @@
 // phi ~ gamma(phi_shape, phi_rate), gamma(2, 0.1) by default. They are
 // placeholders pending elicitation, and the three hyperparameters are data so
 // that a user can change them without editing the model.
+functions {
+  // one slice of the likelihood, for reduce_sum (within-chain threads)
+  real partial_nb(array[] int Rs, int start, int end, vector eta, real phi) {
+    return neg_binomial_2_log_lpmf(Rs | eta[start:end], phi);
+  }
+}
 data {
   int<lower=1> H;                    // units
   int<lower=1> J;                    // scored recruit periods
@@ -21,6 +27,7 @@ data {
   real<lower=0> sigma_scale;         // scale of the half-t priors on the effect sds
   real<lower=0> phi_shape;           // gamma prior on the clumping parameter
   real<lower=0> phi_rate;
+  int<lower=0> grainsize;            // 0: one vectorised call; > 0: reduce_sum slices of about this size
 }
 transformed data {
   // the counts as one flat vector, with the unit and period of each cell, so
@@ -53,7 +60,11 @@ model {
   s_ur ~ student_t(3, 0, sigma_scale);
   s_vr ~ student_t(3, 0, sigma_scale);
   phi_r ~ gamma(phi_shape, phi_rate);
-  Rf ~ neg_binomial_2_log(a_r + u_r[hh] + v_r[jj], phi_r);
+  {
+    vector[N] eta = a_r + u_r[hh] + v_r[jj];
+    if (grainsize > 0) target += reduce_sum(partial_nb, Rf, grainsize, eta, phi_r);
+    else Rf ~ neg_binomial_2_log(eta, phi_r);
+  }
 }
 generated quantities {
   // expected system total at each scored period: the series whose

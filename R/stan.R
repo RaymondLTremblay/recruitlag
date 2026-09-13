@@ -22,6 +22,12 @@
 #'   period effect that has to reach very low values at silent periods needs
 #'   the higher target acceptance and the deeper trees.
 #' @param parallel_chains Chains run at once; defaults to `chains`.
+#' @param threads_per_chain Threads within each chain. Above 1 the likelihood
+#'   is split across threads with Stan's `reduce_sum`, and the model is
+#'   compiled with threading on (once, cached separately). Worth it for
+#'   records with many units, such as a thousand patches; on a small record
+#'   it only adds overhead. `chains * threads_per_chain` should not exceed the
+#'   cores available.
 #' @param sigma_scale Scale of the half-Student-t(3) priors on the two effect
 #'   standard deviations.
 #' @param phi_prior Shape and rate of the gamma prior on the negative-binomial
@@ -112,7 +118,7 @@ lag_ceiling_stan <- function(data, unit = "unit", period = "period",
                              reproduction = "reproduction", recruits = "recruits",
                              K, lag0 = 1L, kernels = lag_kernels(K),
                              missing = c("backfill", "drop"),
-                             chains = 4, parallel_chains = chains,
+                             chains = 4, parallel_chains = chains, threads_per_chain = 1,
                              iter_warmup = 1500, iter_sampling = 2000,
                              adapt_delta = 0.95, max_treedepth = 12,
                              seed = NULL, sigma_scale = 1, phi_prior = c(2, 0.1),
@@ -133,15 +139,22 @@ lag_ceiling_stan <- function(data, unit = "unit", period = "period",
                           missing, "lag_ceiling_stan()")
   check_counts(su$R, recruits, "recruits")
 
+  if (!is.numeric(threads_per_chain) || length(threads_per_chain) != 1 || threads_per_chain < 1)
+    rl_abort("threads_per_chain must be a single whole number of 1 or more. It was given as ",
+             paste(format(threads_per_chain), collapse = ", "), ".")
+  threads_per_chain <- as.integer(threads_per_chain)
+  N <- nrow(su$R) * ncol(su$R)
   stan_data <- list(H = nrow(su$R), J = ncol(su$R), R = unname(round(su$R)),
                     mr = log(mean(su$R) + 0.5),
-                    sigma_scale = sigma_scale, phi_shape = phi_prior[1], phi_rate = phi_prior[2])
+                    sigma_scale = sigma_scale, phi_shape = phi_prior[1], phi_rate = phi_prior[2],
+                    grainsize = if (threads_per_chain > 1) max(1L, N %/% (4L * threads_per_chain)) else 0L)
   storage.mode(stan_data$R) <- "integer"
-  model <- stan_model_cached("ceiling_nb")
+  model <- stan_model_cached("ceiling_nb", threads = threads_per_chain > 1)
   args <- list(data = stan_data, chains = chains, parallel_chains = parallel_chains,
                iter_warmup = iter_warmup, iter_sampling = iter_sampling,
                adapt_delta = adapt_delta, max_treedepth = max_treedepth,
                seed = seed, refresh = refresh, ...)
+  if (threads_per_chain > 1) args$threads_per_chain <- threads_per_chain
   # With refresh = 0 the run is meant to be silent, so CmdStan's chain messages
   # and the informational exceptions it prints during warmup are switched off
   # too, where this version of cmdstanr allows it. They otherwise land in a
@@ -207,16 +220,19 @@ need_cmdstan <- function() {
 # Compile once into the user's cache directory and reuse. The .stan file is
 # copied there first because the installed package directory may be
 # read-only.
-stan_model_cached <- function(name) {
+stan_model_cached <- function(name, threads = FALSE) {
   src <- system.file("stan", paste0(name, ".stan"), package = "recruitlag")
   if (!nzchar(src))
     rl_abort("The Stan model file ", name, ".stan was not found in the installed package. ",
              "Reinstall recruitlag; the file ships in inst/stan/.")
   cache <- tools::R_user_dir("recruitlag", "cache")
   dir.create(cache, showWarnings = FALSE, recursive = TRUE)
-  dst <- file.path(cache, paste0(name, ".stan"))
+  # The threaded build is a different executable, so it gets its own copy of
+  # the source and its own name in the cache.
+  dst <- file.path(cache, paste0(name, if (threads) "_threads" else "", ".stan"))
   if (!file.exists(dst) || !identical(readLines(src), readLines(dst))) file.copy(src, dst, overwrite = TRUE)
-  cmdstanr::cmdstan_model(dst, quiet = TRUE)
+  if (threads) cmdstanr::cmdstan_model(dst, quiet = TRUE, cpp_options = list(stan_threads = TRUE))
+  else cmdstanr::cmdstan_model(dst, quiet = TRUE)
 }
 
 # The negative binomial is a distribution for counts: whole, non-negative.

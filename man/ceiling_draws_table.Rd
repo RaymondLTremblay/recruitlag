@@ -11,7 +11,8 @@ ceiling_draws_table(..., .list = NULL, quantity = "exceedance")
 \code{record} column, so name them by the record or the route as the table
 needs: \code{`L. eltoroensis` = b} or \code{`L. eltoroensis, bootstrap` = b}.}
 
-\item{.list}{Alternatively, a named list of such objects.}
+\item{.list}{Alternatively, a named list of such objects. \code{NULL} entries,
+for a route that was not run, are dropped.}
 
 \item{quantity}{Which rows to keep: \code{"exceedance"} (the default), \code{"all"},
 or any of the six quantity labels (\code{"observed Gini"}, \code{"ceiling Gini"},

@@ -5,6 +5,7 @@
 
 collect_draws <- function(dots, .list, what) {
   x <- c(dots, .list)
+  x <- x[!vapply(x, is.null, logical(1))]        # a route that was not run may be passed as NULL
   if (!length(x))
     rl_abort(what, " needs at least one lag_ceiling_draws object, as returned by ",
              "lag_ceiling_boot(), lag_ceiling_bayesboot() or lag_ceiling_stan(). ",
@@ -38,7 +39,8 @@ method_label <- function(m) c(bootstrap = "cluster bootstrap", `bayesian bootstr
 #' @param ... `lag_ceiling_draws` objects, named. The names become the
 #'   `record` column, so name them by the record or the route as the table
 #'   needs: `` `L. eltoroensis` = b `` or `` `L. eltoroensis, bootstrap` = b ``.
-#' @param .list Alternatively, a named list of such objects.
+#' @param .list Alternatively, a named list of such objects. `NULL` entries,
+#'   for a route that was not run, are dropped.
 #' @param quantity Which rows to keep: `"exceedance"` (the default), `"all"`,
 #'   or any of the six quantity labels (`"observed Gini"`, `"ceiling Gini"`,
 #'   `"exceedance Gini"`, `"observed CV"`, `"ceiling CV"`, `"exceedance CV"`).

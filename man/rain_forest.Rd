@@ -16,7 +16,8 @@ rain_forest(
 \code{record} column, so name them by the record or the route as the table
 needs: \code{`L. eltoroensis` = b} or \code{`L. eltoroensis, bootstrap` = b}.}
 
-\item{.list}{Alternatively, a named list of such objects.}
+\item{.list}{Alternatively, a named list of such objects. \code{NULL} entries,
+for a route that was not run, are dropped.}
 
 \item{index}{\code{"gini"} (the default), \code{"cv"} or \code{"both"} (two panels).}
 
