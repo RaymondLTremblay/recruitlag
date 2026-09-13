@@ -26,6 +26,8 @@ weights \code{w} (\code{\link[=lag_kernels]{lag_kernels()}}) \tab sum to 1 \tab 
 \code{rho} (\code{\link[=lag_kernels]{lag_kernels()}}) \tab 0 to 1 \tab Geometric decay. Near 0 puts all weight on the first bin, near 1 approaches equal weights. \cr
 \code{theorem}, \code{ceiling} (\code{\link[=lag_ceiling]{lag_ceiling()}}) \tab as \code{gini} and \code{cv} \tab Reproduction's own concentration, which no delay can exceed. \cr
 \code{exceedance} (\code{\link[=lag_ceiling]{lag_ceiling()}}) \tab above 0, centred on 1 \tab 1 is exactly at the bound; above 1 is more concentrated than any delay predicts. A description of the gap, not a test. \cr
+\code{expected_returns}, \code{excess} (\code{\link[=recruit_triage]{recruit_triage()}}) \tab counts of plants \tab How many first sightings the record's own dormancy would produce from plants present but unseen at the first period, and what is left over (recruitment plus search effort). \cr
+\code{detection} (\code{\link[=recruit_triage]{recruit_triage()}}) \tab 0 to 1 \tab Share of periods, between a plant's first and last sighting, at which it was seen; the conventional estimate of resighting given survival, biased upward. \cr
 \code{lower}, \code{upper} (\code{\link[=lag_ceiling_boot]{lag_ceiling_boot()}}) \tab as the statistic \tab A confidence interval from resampling units, BCa by default; read in the usual way. \cr
 \code{p_boot} (\code{\link[=lag_ceiling_boot]{lag_ceiling_boot()}}) \tab 1/R to 1 \tab One-sided bootstrap p-value for exceedance at most 1. Not a posterior probability. \cr
 \code{lower}, \code{upper}, \code{prob} (\code{\link[=lag_ceiling_bayesboot]{lag_ceiling_bayesboot()}}, \code{\link[=lag_ceiling_stan]{lag_ceiling_stan()}}) \tab as the statistic; 0 to 1 \tab A credible interval and \code{P(exceedance > 1)}, under a stated prior. The Bayesian bootstrap keeps the estimand of \code{\link[=lag_ceiling]{lag_ceiling()}}; the Stan model estimates the concentration of the expected series instead, which is lower. \cr
@@ -60,11 +62,6 @@ Useful links:
 }
 \author{
 \strong{Maintainer}: Raymond L. Tremblay \email{raymond.tremblay@gmail.com} (\href{https://orcid.org/0000-0002-8588-4372}{ORCID})
-
-Authors:
-\itemize{
-  \item Raymond L. Tremblay \email{raymond.tremblay@gmail.com} (\href{https://orcid.org/0000-0002-8588-4372}{ORCID})
-}
 
 }
 \keyword{internal}

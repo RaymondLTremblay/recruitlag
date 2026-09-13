@@ -38,6 +38,8 @@ R/
   stan.R           lag_ceiling_stan(); the model is inst/stan/ceiling_nb.stan
   forest.R         ceiling_draws_table() and rain_forest(): one table and one
                    figure for several records and routes
+  dormancy.R       recruit_triage(), rain_sightings(), and the caladenia_dormancy
+                   calibration table: is a first sighting a recruit?
   concentration.R  rain_gini(), rain_cv(), concentration(), phi_moment()
   convolve.R       convolve_lag(), expected_recruits(), series_from()
   kernels.R        lag_kernels(), flat_kernel()
@@ -71,6 +73,8 @@ tests/testthat/    reproduce the companion paper's archived outputs
 | `ceiling_calibration(ce)` | what counts about a mean obeying the ceiling could produce. The pooled comparison usually cannot refute anything |
 | `host_lag_test(unit = )` | the test with the null stated as the hypothesis asserts it |
 | `host_matrices()` | the per-unit matrices behind it |
+
+**Is a first sighting a recruit?** `recruit_triage(x, ...)` takes a plant-by-period state matrix (or long plant/period/state data) and reports the state at first sighting (flowering means established), the runs of unseen periods between sightings (Coates et al. 2006 Table 2 style), the record's own resighting estimate (conventional method), and, given `s` and `r` (or `species = "C. valida"` etc. from `caladenia_dormancy`, Tremblay et al. 2009 Table 2), the expected number of first sightings that are returns of plants present but unseen at period 1: `N1 (1 - r) s q^(k - 2)`, `q = s (1 - r)`. `excess` = first sightings minus that = recruitment plus search effort. Runs with `q^k < 0.01` are flagged as improbable for a living plant (tag reuse). `rain_sightings()` draws bars by state with the expected-returns line. On *C. valida* 18FPSR: 68% first seen flowering, the 2001 (51) and 2014 (98) cohorts are search events, 21 improbable runs.
 
 **Uncertainty on the exceedance.** Three routes, all returning a
 `lag_ceiling_draws` object, because RLT will not impose one philosophy on

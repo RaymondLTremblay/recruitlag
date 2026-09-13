@@ -17,6 +17,8 @@
 #'   `rho` ([lag_kernels()]) \tab 0 to 1 \tab Geometric decay. Near 0 puts all weight on the first bin, near 1 approaches equal weights. \cr
 #'   `theorem`, `ceiling` ([lag_ceiling()]) \tab as `gini` and `cv` \tab Reproduction's own concentration, which no delay can exceed. \cr
 #'   `exceedance` ([lag_ceiling()]) \tab above 0, centred on 1 \tab 1 is exactly at the bound; above 1 is more concentrated than any delay predicts. A description of the gap, not a test. \cr
+#'   `expected_returns`, `excess` ([recruit_triage()]) \tab counts of plants \tab How many first sightings the record's own dormancy would produce from plants present but unseen at the first period, and what is left over (recruitment plus search effort). \cr
+#'   `detection` ([recruit_triage()]) \tab 0 to 1 \tab Share of periods, between a plant's first and last sighting, at which it was seen; the conventional estimate of resighting given survival, biased upward. \cr
 #'   `lower`, `upper` ([lag_ceiling_boot()]) \tab as the statistic \tab A confidence interval from resampling units, BCa by default; read in the usual way. \cr
 #'   `p_boot` ([lag_ceiling_boot()]) \tab 1/R to 1 \tab One-sided bootstrap p-value for exceedance at most 1. Not a posterior probability. \cr
 #'   `lower`, `upper`, `prob` ([lag_ceiling_bayesboot()], [lag_ceiling_stan()]) \tab as the statistic; 0 to 1 \tab A credible interval and `P(exceedance > 1)`, under a stated prior. The Bayesian bootstrap keeps the estimand of [lag_ceiling()]; the Stan model estimates the concentration of the expected series instead, which is lower. \cr

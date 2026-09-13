@@ -143,6 +143,7 @@ theory and the functions that implement it): `browseVignettes("recruitlag")`.
 | Schedule | `rain_intervals` |
 | Kernels | `lag_kernels`, `flat_kernel` |
 | The check | `lag_ceiling`, `lag_ceiling_by`, `rain_indices`, `ceiling_calibration`, `host_lag_test`, `host_matrices` |
+| Is a first sighting a recruit? | `recruit_triage` (state at first sighting, dormancy runs, detection, expected returns under published survival and resighting rates), `rain_sightings`, and the `caladenia_dormancy` calibration table |
 | Uncertainty on the exceedance | `lag_ceiling_boot` (cluster bootstrap, BCa or percentile), `lag_ceiling_bayesboot` (Bayesian bootstrap), `lag_ceiling_stan` (negative-binomial model of the recruits, via `cmdstanr`); `ceiling_draws_table` (one table for several records and routes) and `rain_forest` (the forest plot of them) |
 | Quantities | `rain_gini`, `rain_cv`, `concentration`, `phi_moment`, `convolve_lag`, `expected_recruits`, `series_from` |
 | Figures | `rain_series`, `rain_strip`, `rain_strips`, `rain_profiles`, `rain_expected`, `rain_units`, and `plot()` methods for `ceiling_calibration` and `host_lag_test` |
