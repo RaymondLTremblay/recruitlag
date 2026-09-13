@@ -94,7 +94,7 @@ bca_interval <- function(theta, boot, jack, level) {
   p0 <- mean(boot < theta)
   if (p0 <= 0 || p0 >= 1)
     return(list(lower = unname(stats::quantile(boot, a)), upper = unname(stats::quantile(boot, 1 - a)),
-                fallback = "every replicate fell on one side of the estimate"))
+                fallback = "percentile: every replicate fell on one side of the estimate"))
   z0 <- stats::qnorm(p0)
   jack <- jack[is.finite(jack)]
   jm <- mean(jack)
@@ -138,9 +138,15 @@ interval_table <- function(point, draws, level, type, jack = NULL) {
       percentile = percentile_interval(b, level),
       eti = percentile_interval(b, level),
       hdi = hdi_interval(b, level))
+    note <- if (!is.null(iv$fallback) && !is.na(iv$fallback)) iv$fallback else ""
+    # An interval that misses its own estimate, or has no width, is the BCa
+    # correction failing on too few distinct resamples. Say so rather than
+    # print it as if it were an interval.
+    if (type == "bca" && all(is.finite(c(iv$lower, iv$upper))) &&
+        (iv$lower > point[[s]] || iv$upper < point[[s]] || iv$upper == iv$lower))
+      note <- "BCa failed: too few distinct resamples; use type = 'percentile' or lag_ceiling_bayesboot()"
     data.frame(quantity = stat_labels[[s]], estimate = unname(point[[s]]),
-               lower = iv$lower, upper = iv$upper,
-               note = if (!is.null(iv$fallback) && !is.na(iv$fallback)) iv$fallback else "",
+               lower = iv$lower, upper = iv$upper, note = note,
                stringsAsFactors = FALSE)
   })
   do.call(rbind, rows)
@@ -245,6 +251,11 @@ lag_ceiling_boot <- function(data, unit = "unit", period = "period",
   su <- uncertainty_setup(data, unit, period, reproduction, recruits, K, lag0, kernels,
                           missing, "lag_ceiling_boot()")
   H <- su$n_units
+  if (H < 10 && type == "bca")
+    rl_warn("Only ", H, " units to resample. The bootstrap distribution then has few distinct ",
+            "values and the BCa correction can collapse or miss the estimate; any such row is ",
+            "flagged in the table. Compare with type = \"percentile\" and with ",
+            "lag_ceiling_bayesboot(), whose Dirichlet weights are continuous.")
   stat <- function(idx) ceiling_stats(colSums(su$X[idx, , drop = FALSE]),
                                       colSums(su$R[idx, , drop = FALSE]), su$li, su$W)
   point <- stat(seq_len(H))
@@ -390,7 +401,7 @@ print.lag_ceiling_draws <- function(x, digits = 3, ...) {
     d <- if (grepl("exceedance", tab$quantity[i])) 2 else digits
     cat(sprintf("  %-17s %s   [%s, %s]%s\n", tab$quantity[i], f(tab$estimate[i], d),
                 f(tab$lower[i], d), f(tab$upper[i], d),
-                if (nzchar(tab$note[i])) paste0("   (percentile: ", tab$note[i], ")") else ""))
+                if (nzchar(tab$note[i])) paste0("   (", tab$note[i], ")") else ""))
   }
   if (x$method == "bootstrap") {
     fp <- function(p) if (p == 0) sprintf("< %s", format(1 / x$R, digits = 2)) else format(p, digits = 2)

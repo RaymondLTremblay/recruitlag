@@ -107,3 +107,16 @@ test_that("lag_ceiling_stan() needs cmdstanr and refuses rates", {
   expect_true(is.finite(st$diagnostics$max_rhat))
   expect_output(print(st), "Negative-binomial")
 })
+
+test_that("few units warn, and a collapsed BCa row is flagged rather than printed as an interval", {
+  five <- lepanthes_hosts[lepanthes_hosts$host %in% unique(lepanthes_hosts$host)[1:5], ]
+  set.seed(5)
+  expect_warning(b <- lag_ceiling_boot(five, unit = "host", reproduction = "inflorescences",
+                                       K = 4, kernels = k, R = 300), "Only 5 units")
+  tab <- b$table
+  bad <- tab$lower > tab$estimate | tab$upper < tab$estimate | tab$upper == tab$lower
+  expect_true(all(nzchar(tab$note[bad])))
+  set.seed(5)
+  expect_silent(lag_ceiling_boot(five, unit = "host", reproduction = "inflorescences",
+                                 K = 4, kernels = k, R = 300, type = "percentile"))
+})
