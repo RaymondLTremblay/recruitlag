@@ -33,7 +33,10 @@
 #' @source Tremblay, R. L. Sex every month, seedlings once in a while: can
 #'   episodic recruitment be a delayed consequence of continuous
 #'   reproduction? (companion paper); Tremblay & Ackerman (2001) Biological
-#'   Journal of the Linnean Society 72: 47-62 for the monthly survey.
+#'   Journal of the Linnean Society 72: 47-62 for the monthly survey. The
+#'   census data are released under the Creative Commons Attribution 4.0
+#'   licence (CC BY 4.0), the same terms as the paper's data archive; the
+#'   package code is under the MIT licence.
 #' @examples
 #' lepanthes_census
 #' head(lepanthes_hosts)

@@ -8,3 +8,4 @@
 ^Meta$
 ^CLAUDE\.md$
 ^README\.md$
+^.*\.tar\.gz$

@@ -1,0 +1,26 @@
+citHeader("To cite recruitlag in publications use:")
+
+bibentry(
+  bibtype = "Manual",
+  title   = "recruitlag: Can Episodic Recruitment Be a Delayed Consequence of Continuous Reproduction?",
+  author  = person("Raymond L.", "Tremblay"),
+  year    = "2026",
+  note    = "R package version 0.1.0",
+  url     = "https://github.com/RaymondLTremblay/recruitlag",
+  textVersion = paste(
+    "Tremblay, R. L. (2026). recruitlag: Can Episodic Recruitment Be a Delayed",
+    "Consequence of Continuous Reproduction? R package version 0.1.0.",
+    "https://github.com/RaymondLTremblay/recruitlag")
+)
+
+bibentry(
+  bibtype = "Article",
+  title   = "Sex every month, seedlings once in a while: can episodic recruitment be a delayed consequence of continuous reproduction?",
+  author  = person("Raymond L.", "Tremblay"),
+  journal = "Oikos",
+  year    = "2026",
+  note    = "submitted",
+  textVersion = paste(
+    "Tremblay, R. L. (2026). Sex every month, seedlings once in a while: can episodic",
+    "recruitment be a delayed consequence of continuous reproduction? Oikos, submitted.")
+)

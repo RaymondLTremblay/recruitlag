@@ -127,7 +127,8 @@ censuses.
 ## Two data sets, five vignettes
 
 `lepanthes_monthly`, `lepanthes_census`, `lepanthes_hosts` and
-`lepanthes_profile` hold the census records of the paper; `regimes` holds six
+`lepanthes_profile` hold the census records of the paper (released under
+CC BY 4.0, the same terms as the paper's data archive; the code is MIT); `regimes` holds six
 invented records in one long tibble (seasonal, intermediate and aseasonal reproduction, each
 with a true delay and with gated recruitment) that show where the test has
 power and where it does not. The vignettes are `baby-steps` (every step,
