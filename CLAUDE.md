@@ -5,6 +5,8 @@ The fast on-ramp for working on this package. For what the method *is*, read
 
 Author: Raymond L. Tremblay (RLT). Last revised 2026-09-13 (uncertainty functions added).
 
+**Release in progress (2026-10-05):** Zenodo DOI and CRAN submission. Read `RELEASE_PLAN.md` first.
+
 ## 1. What the package does, in one paragraph
 
 If recruitment is the delayed consequence of reproduction, expected recruitment
