@@ -25,7 +25,7 @@ It is the software behind the companion paper on the epiphytic orchid
 
 ```r
 # install.packages("remotes")
-remotes::install_github("raymondltremblay/recruitlag")
+remotes::install_github("RaymondLTremblay/recruitlag")
 ```
 
 ## The analysis in six calls
@@ -124,15 +124,17 @@ not offered, because it asserts that no seed fell before the record began
 and turns a long pure delay into a prediction of no recruits at the first
 censuses.
 
-## Two data sets, five vignettes
+## Three data sets, five vignettes
 
 `lepanthes_monthly`, `lepanthes_census`, `lepanthes_hosts` and
 `lepanthes_profile` hold the census records of the paper (released under
 CC BY 4.0, the same terms as the paper's data archive; the code is MIT); `regimes` holds six
 invented records in one long tibble (seasonal, intermediate and aseasonal reproduction, each
 with a true delay and with gated recruitment) that show where the test has
-power and where it does not. The vignettes are `baby-steps` (every step,
-no mathematics), `invented-regimes`, `lepanthes`, `intervals` (what a confidence
+power and where it does not; `caladenia_dormancy` holds the survival and
+resighting rates of nine Victorian terrestrial orchids used by
+`recruit_triage()`. The vignettes are `recruitlag` (the introduction: every
+step, no mathematics), `invented-regimes`, `lepanthes`, `intervals` (what a confidence
 interval, a credible interval, BCa, percentile, equal-tailed and highest-density
 intervals are, and how to write the sentence for each) and `mathematics` (the
 theory and the functions that implement it): `browseVignettes("recruitlag")`.

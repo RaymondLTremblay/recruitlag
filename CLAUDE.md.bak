@@ -231,7 +231,5 @@ then: lag bins are labelled from the first lagged census (0-6, 6-12, ...,
 wording; every validator lives in `checks.R` (`rl_check_weights`,
 `rl_check_whole`, `rl_check_counts`, `rl_check_level`, `rl_need_cmdstan`);
 `tests/testthat/test-regressions.R` holds one test per bug fixed.
-The five warning thresholds (REVIEW.md §6) are kept as stated working
-conventions of the package, each documented as such where it is used, with no
-citation. Open: the phase
+Open: the thresholds in REVIEW.md §6 (no source on hand) and the phase
 numbering of `ceiling_calibration()` (9a in the tests, 9b in README).

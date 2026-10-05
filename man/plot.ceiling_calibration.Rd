@@ -33,8 +33,9 @@ floored at \eqn{1/\mathrm{nsim}}{1/nsim} because no simulation can resolve below
 that. Points sitting on the floor mean "smaller than
 \eqn{1/\mathrm{nsim}}{1/nsim}", not zero. Two horizontal lines are drawn: the
 dashed line is the flat reference, which is the comparison that matters,
-and the dotted line at 0.05 is a conventional reference mark and not a
-decision rule (Wasserstein and Lazar 2016). Read the plot as the spread of
+and the dotted line at 0.05 is a reference mark for the eye, the level a
+reader will look for, and not a decision rule (Wasserstein and Lazar
+2016); nothing in the package tests against it. Read the plot as the spread of
 the whole kernel family, since the verdict is the highest point on it.
 
 For a \code{ceiling_calibration} the axis is the Gini of simulated count

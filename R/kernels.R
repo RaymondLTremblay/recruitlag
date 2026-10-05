@@ -8,8 +8,9 @@
 #'
 #' @param K Lag horizon: the number of bins beyond the first, so that a kernel
 #'   has `K + 1` weights. The paper uses `K = 6` for monthly data (lags 0 to 6
-#'   months) and `K = 4` for six-monthly data (five bins, 6 to 30 months
-#'   before the recruit census).
+#'   months) and `K = 4` for six-monthly data (five six-month bins, labelled
+#'   0-6 to 24-30 months, counted from the first lagged census; see `lag0`
+#'   in [convolve_lag()]).
 #' @param families Which families to include. `"delay"`: pure delays, all
 #'   weight on one bin (these attain the ceiling). `"window"`: uniform windows
 #'   of every width from 2 to `K + 1`, at every start (`windows = "all"`) or
@@ -41,8 +42,11 @@
 #'
 #' **`K`, the horizon, in bins and in time.** A kernel covers `K + 1` bins,
 #' so with `bin` months per bin the horizon reaches `bin * (K + 1)` months
-#' back from the first lagged bin. The paper's `K = 4` with `bin = 6` and
-#' `lag0 = 1` searches 6 to 30 months before the recruit census. Nothing
+#' back from the first lagged bin. The labels count from that first lagged
+#' bin, not from the recruit census: with `lag0 = 1` the first bin is the
+#' census before the recruit census, and the label "0-6 mo" means the first
+#' six months of the lag window. The paper's `K = 4` with `bin = 6` searches
+#' a 30-month window, labelled 0-6 to 24-30 months. Nothing
 #' outside the horizon is tested, so a delay longer than `bin * (K + 1)` is
 #' not refuted by a small verdict: state the horizon whenever the result is
 #' reported.
@@ -110,6 +114,9 @@ lag_kernels <- function(K, families = c("delay", "window", "geometric", "dirichl
   K <- as.integer(K)
   families <- match.arg(families, several.ok = TRUE)
   windows <- match.arg(windows)
+  if ("geometric" %in% families && (!is.numeric(rho) || anyNA(rho) || any(rho <= 0)))
+    rl_abort("rho must be positive decay rates for the geometric family (weight k is ",
+             "proportional to rho^k). Given: ", rl_list(format(rho)), ".")
   lab <- function(from, to) {
     if (is.null(bin)) sprintf("bins %d-%d", from, to - 1L)
     else sprintf("%g-%g %s", bin * from, bin * to, unit)
@@ -148,6 +155,9 @@ lag_kernels <- function(K, families = c("delay", "window", "geometric", "dirichl
       if (any(extra[[nm]] < 0, na.rm = TRUE) || anyNA(extra[[nm]]))
         rl_abort('The extra kernel "', nm, '" has negative or missing weights. ',
                  "Lag weights are non-negative and are renormalised to sum to 1.")
+      if (sum(extra[[nm]]) == 0)
+        rl_abort('The extra kernel "', nm, '" has weights that sum to zero, so there is no ',
+                 "profile to apply. At least one bin must carry weight.")
       add(nm, "supplied", extra[[nm]])
     }
   }

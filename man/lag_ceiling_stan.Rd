@@ -157,7 +157,10 @@ sit above the bootstraps, which count what was seen.
 \strong{Read the sampler diagnostics before the interval.} Divergent
 transitions, an Rhat above about 1.01 or a bulk ESS below about 100 mean
 the posterior was not explored and the interval is not to be trusted. The
-function warns, and the printed summary carries the numbers. Transitions
+function warns at those values, and the printed summary carries the
+numbers. The two cutoffs are working conventions of this package for
+deciding when to warn, not published thresholds; the interval itself is
+never altered by them. Transitions
 that hit the maximum tree depth are an efficiency warning, not a validity
 one, but many of them with a poor Rhat mean the chains sat in different
 regions.

@@ -12,7 +12,9 @@
 #'   count and the recruit count.
 #' @return A list with `R` (recruits, units by scored periods, `colnames` the
 #'   period indices) and `X` (reproduction, units by periods 1 to the last
-#'   period in `data`). Missing reproduction is treated as zero.
+#'   period in `data`). Missing reproduction is treated as zero. A unit with
+#'   `NA` recruits at a period that was scored for other units is treated as
+#'   having zero recruits there, with a warning.
 #' @examples
 #' m <- host_matrices(lepanthes_hosts, unit = "host", reproduction = "inflorescences")
 #' dim(m$R); dim(m$X)
@@ -31,6 +33,15 @@ host_matrices <- function(data, unit = "unit", period = "period",
   if (!length(scored))
     rl_abort('No period has a recruit count: "', recruits, '" is NA in every row.')
   R <- Rfull[, scored, drop = FALSE]
+  # A unit with no recruit count at a period that other units were scored at
+  # is read as a unit with no recruits there. That is a claim about the
+  # plants, so it is said out loud.
+  n_na <- sum(is.na(R))
+  if (n_na > 0)
+    rl_warn(n_na, ' cell(s) of "', recruits, '" are NA at periods where other units were scored, ',
+            "and are read as zero recruits for those units. If those units were not censused ",
+            "at those periods, this understates their recruitment and raises the concentration ",
+            "of the summed series; drop those periods or those units first if that is the case.")
   R[is.na(R)] <- 0
   list(R = R, X = X)
 }
@@ -38,7 +49,9 @@ host_matrices <- function(data, unit = "unit", period = "period",
 #' Pull the two system-wide series from a data frame
 #'
 #' Sums (or takes, if there is one row per period) reproduction and recruits
-#' by period. Periods at which `recruits` is `NA` are unscored.
+#' by period. Periods at which `recruits` is `NA` in every row are unscored;
+#' a period at which some rows are `NA` and others carry a count is summed
+#' over the rows with a count, with a warning.
 #' @param data A data frame with one row per period, or per unit and period.
 #' @param period,reproduction,recruits Names of the columns holding the
 #'   period index (integer, from 1), the reproductive count and the recruit
@@ -57,5 +70,10 @@ series_from <- function(data, period = "period", reproduction = "reproduction",
   X[is.na(X)] <- 0
   Rs <- tapply(data[[recruits]], factor(p, periods), function(v) if (all(is.na(v))) NA_real_ else sum(v, na.rm = TRUE))
   t_R <- which(!is.na(Rs))
+  partial <- tapply(data[[recruits]], factor(p, periods), function(v) any(is.na(v)) && !all(is.na(v)))
+  if (any(partial, na.rm = TRUE))
+    rl_warn("At period(s) ", rl_list(which(partial)), ' some rows have NA in "', recruits,
+            '" while others have a count. The sum for those periods uses only the rows with ',
+            "a count, which understates recruitment there if the NA rows were not censused.")
   list(X = as.numeric(X), R = as.numeric(Rs[t_R]), t_R = as.integer(t_R))
 }

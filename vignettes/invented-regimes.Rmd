@@ -8,7 +8,9 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.5)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.5,
+                      eval = requireNamespace("dplyr", quietly = TRUE) &&
+                             requireNamespace("tidyr", quietly = TRUE))
 ```
 
 ```{r, message = FALSE}
@@ -27,7 +29,8 @@ negative-binomial counts. Under `gated`, recruits arrive only at three of 24
 periods, when an external gate opens, at a rate proportional to each unit's
 average reproduction, so the record is episodic and does not track
 reproduction. Nothing here is data; the generating rules are in
-`data-raw/regimes.R` and in `regimes_truth`.
+`regimes_truth` and in the script `data-raw/regimes.R` of the source
+repository (https://github.com/RaymondLTremblay/recruitlag).
 
 ```{r}
 regimes
@@ -59,6 +62,7 @@ totals
 ```{r, fig.height = 8}
 totals |>
   pivot_longer(c(reproduction, recruits), names_to = "series", values_to = "count") |>
+  filter(!is.na(count)) |>                      # unscored periods are not drawn
   mutate(series = factor(series, c("reproduction", "recruits")),
          label = factor(label, unique(regimes$label))) |>
   mutate(panel = factor(paste(label, series, sep = ": "),
@@ -94,7 +98,7 @@ tibble(record = names(ceilings),
        ceiling = sapply(ceilings, function(x) x$theorem["gini"]),
        observed = sapply(ceilings, function(x) x$obs["gini"]),
        exceedance = sapply(ceilings, function(x) x$exceedance["gini"])) |>
-  mutate(across(where(is.numeric), round, 2))
+  mutate(across(where(is.numeric), \(x) round(x, 2)))
 ```
 
 ```{r, fig.height = 5}
@@ -102,7 +106,7 @@ rain_strip(ceilings)
 ```
 
 Two rows of the table carry the lesson. Under seasonal reproduction the
-ceiling is about 0.65, and both records, the true delay and the gate, sit
+ceiling is about `r round(ceilings$seasonal_delayed$theorem["gini"], 2)`, and both records, the true delay and the gate, sit
 near it: the gated record exceeds the ceiling only slightly, and a reader
 could not tell the two mechanisms apart from the pooled series. Under
 aseasonal reproduction the ceiling is near zero, so the gated record exceeds
@@ -199,7 +203,7 @@ round(sort(p_true), 2)
 
 The values spread across the unit interval rather than piling up near zero,
 which is what a calibrated test does when the null is true. A single draw
-can of course land in the tail; the seed of `data-raw/regimes.R` was chosen
+can of course land in the tail; the seed of the generating script was chosen
 so that the delayed records in `regimes` are typical draws rather than tail
 ones.
 

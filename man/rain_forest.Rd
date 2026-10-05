@@ -59,5 +59,5 @@ b  <- lag_ceiling_boot(lepanthes_hosts, unit = "host", reproduction = "infloresc
                        K = 4, kernels = k, R = 200)
 bb <- lag_ceiling_bayesboot(lepanthes_hosts, unit = "host", reproduction = "inflorescences",
                             K = 4, kernels = k, draws = 200)
-rain_forest(`L. eltoroensis` = b, `L. eltoroensis` = bb, index = "both")
+rain_forest(`23 host trees` = b, `23 host trees` = bb, index = "both")
 }

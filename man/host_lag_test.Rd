@@ -104,8 +104,8 @@ a very small value, and note that \code{\link[=plot.host_lag_test]{plot.host_lag
 at \eqn{1/\mathrm{nsim}}{1/nsim} for the same reason.
 
 \strong{The verdict is a maximum, not an average.} \code{verdict} takes, for each
-statistic, the largest probability over every profile and every \code{phi}
-setting, together with the profile attaining it. It is therefore the best
+statistic and each \code{phi} setting separately, the largest probability over
+every profile, together with the profile attaining it. It is therefore the best
 case the lag hypothesis can make for itself over the whole family
 searched. A small verdict says that no profile in the family, not merely
 the fitted one, reproduces the record.

@@ -19,9 +19,9 @@ library(recruitlag)
 
 Let $X_t$ be the reproductive record at periods $t = 1, \dots, T$ and $R_t$
 the recruits scored at a subset of periods. The lag hypothesis, in the form
-a distributed-lag or antecedent-effect model estimates and in the form a
-projection matrix asserts, is that expected recruitment is a weighted sum of
-past reproduction,
+a distributed-lag model (Koyck 1954) or antecedent-effect model estimates and
+in the form a projection matrix asserts, is that expected recruitment is a
+weighted sum of past reproduction,
 
 $$
 \mathbb{E}[R_t] \;=\; c \sum_{k=0}^{K} w_k \, X_{t - \ell_0 - k},
@@ -63,10 +63,11 @@ $$
 with $x_{(i)}$ the values in increasing order, and the coefficient of
 variation $\mathrm{CV}(x) = s_x / \bar x$, are both Schur-convex: they fall
 whenever a quantity is moved from a fuller period to an emptier one, and
-they are invariant to scale. By the Hardy, Littlewood and Pólya theorem, a
-vector obtained from another by a doubly stochastic matrix is majorized by
-it, and every Schur-convex index of the output is therefore no larger than
-that of the input. Over a full record, in which every $X_t$ enters the same
+they are invariant to scale. By the Hardy, Littlewood and Pólya theorem
+(Hardy et al. 1952; Marshall et al. 2011, ch. 2), a vector obtained from
+another by a doubly stochastic matrix is majorized by it, and every
+Schur-convex index of the output is therefore no larger than that of the
+input. Over a full record, in which every $X_t$ enters the same
 number of windows with the same total weight, $W$ is doubly stochastic up to
 the boundary, and the most concentrated output available is the pure delay,
 which permutes the series without mixing it. Hence
@@ -111,7 +112,7 @@ The exceedance `ce$exceedance` is therefore a description, not a test.
 If $X$ is nearly constant, $W X$ is nearly constant for every $W$, and the
 data carry almost no information about $w$. A distributed-lag model fitted
 to such data returns its prior, however long the series runs; the fitted
-profile in `lepanthes$lag_profile` is close to flat for that reason.
+profile in `lepanthes_profile` is close to flat for that reason.
 `rain_expected()` makes the point visually: profiles that could not differ
 more give expected series that all but coincide.
 
@@ -200,4 +201,19 @@ the invented records show; aseasonality is where it bites.
 | Pooled calibration | `ceiling_calibration()` | 9b |
 | Unit-level expectation and clumping | `expected_recruits()`, `phi_moment()` | 9d |
 | Host-level test | `host_lag_test()` | 9d |
-| Figures | `rain_series()`, `rain_strip()`, `rain_profiles()`, `rain_expected()`, `plot()` methods | Figs 2, 3 and 5 |
+| Several units and several reproductive measures | `lag_ceiling_by()`, `rain_indices()` | sensitivity analyses |
+| Census schedule | `rain_intervals()` | data preparation |
+| Uncertainty on the exceedance | `lag_ceiling_boot()`, `lag_ceiling_bayesboot()`, `lag_ceiling_stan()`, `ceiling_draws_table()` | intervals |
+| Is a first sighting a recruit? | `recruit_triage()` | recruit definition |
+| Figures | `rain_series()`, `rain_strip()`, `rain_strips()`, `rain_units()`, `rain_profiles()`, `rain_expected()`, `rain_forest()`, `rain_sightings()`, `plot()` methods | Figs 2, 3 and 5 |
+
+## References
+
+Hardy, G. H., Littlewood, J. E. and Pólya, G. (1952) *Inequalities*, 2nd
+edn. Cambridge University Press, Cambridge.
+
+Koyck, L. M. (1954) *Distributed Lags and Investment Analysis*.
+North-Holland, Amsterdam.
+
+Marshall, A. W., Olkin, I. and Arnold, B. C. (2011) *Inequalities: Theory of
+Majorization and Its Applications*. Springer, New York.

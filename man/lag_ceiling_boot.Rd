@@ -86,7 +86,10 @@ design's replicates. Resampling units is the cluster bootstrap of Davison
 and Hinkley (1997, ch. 3). With few units (the \emph{Lepanthes eltoroensis}
 record has 23) the BCa interval is preferred to the percentile one, since
 it corrects for the skew a ratio carries and for the bias between the
-bootstrap distribution and the estimate.
+bootstrap distribution and the estimate. Below ten units the function
+warns that the bootstrap distribution has few distinct values; ten is a
+working convention of this package for when to say so, not a published
+minimum, and the interval is still computed.
 
 \strong{What the interval does not say.} A wide interval does not weaken the
 ceiling, which is a bound and not an estimate. It says how firmly the

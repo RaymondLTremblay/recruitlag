@@ -4,9 +4,9 @@
 \name{recruitlag-package}
 \alias{recruitlag}
 \alias{recruitlag-package}
-\title{recruitlag: Can Episodic Recruitment Be a Delayed Consequence of Continuous Reproduction?}
+\title{recruitlag: Can Episodic Recruitment be a Delayed Consequence of Continuous Reproduction?}
 \description{
-Tests whether an episodic recruitment record can be the delayed consequence of a reproductive record, under any distributed lag. A delay is a convolution, and a convolution is a weighted average, so the concentration in time of expected recruitment can never exceed that of reproduction: reproduction's own concentration is a ceiling. The package computes that ceiling by searching families of lag weights (pure delays, windows, geometric decay and Dirichlet draws), calibrates the pooled comparison against negative-binomial counts to show what it can and cannot refute, and runs the host-level (replicate-unit) test in which the null is the lag hypothesis exactly as it is asserted: expected recruitment on each unit is that unit's own lagged reproduction, scaled to its own total. Plotting functions draw the ceiling strip, the lag profiles against the observed counts, and the calibration. The census data on the epiphytic orchid Lepanthes eltoroensis analysed in the companion paper are included.
+Tests whether an episodic recruitment record can be the delayed consequence of a reproductive record, under any distributed lag. A delay is a convolution, and a convolution is a weighted average, so the concentration in time of expected recruitment can never exceed that of reproduction: reproduction's own concentration is a ceiling. The package computes that ceiling by searching families of lag weights (pure delays, windows, geometric decay and Dirichlet draws), calibrates the pooled comparison against negative-binomial counts to show what it can and cannot refute, and runs the host-level (replicate-unit) test in which the null is the lag hypothesis exactly as it is asserted: expected recruitment on each unit is that unit's own lagged reproduction, scaled to its own total. Uncertainty on the exceedance comes by three routes, a cluster bootstrap over units, a Bayesian bootstrap (Rubin 1981 \doi{10.1214/aos/1176345338}) and a negative-binomial model of the counts fitted with 'Stan' through 'cmdstanr'; recruit_triage() asks whether a first sighting is a recruit or a plant returning from dormancy. Plotting functions draw the ceiling strip, the lag profiles against the observed counts, the calibration and a forest plot of the intervals. The census data on the epiphytic orchid Lepanthes eltoroensis analysed in the companion paper are included.
 }
 \section{Reading the numbers}{
 
@@ -29,7 +29,7 @@ weights \code{w} (\code{\link[=lag_kernels]{lag_kernels()}}) \tab sum to 1 \tab 
 \code{expected_returns}, \code{excess} (\code{\link[=recruit_triage]{recruit_triage()}}) \tab counts of plants \tab How many first sightings the record's own dormancy would produce from plants present but unseen at the first period, and what is left over (recruitment plus search effort). \cr
 \code{detection} (\code{\link[=recruit_triage]{recruit_triage()}}) \tab 0 to 1 \tab Share of periods, between a plant's first and last sighting, at which it was seen; the conventional estimate of resighting given survival, biased upward. \cr
 \code{lower}, \code{upper} (\code{\link[=lag_ceiling_boot]{lag_ceiling_boot()}}) \tab as the statistic \tab A confidence interval from resampling units, BCa by default; read in the usual way. \cr
-\code{p_boot} (\code{\link[=lag_ceiling_boot]{lag_ceiling_boot()}}) \tab 1/R to 1 \tab One-sided bootstrap p-value for exceedance at most 1. Not a posterior probability. \cr
+\code{p_boot} (\code{\link[=lag_ceiling_boot]{lag_ceiling_boot()}}) \tab 0 to 1 (0 is printed as below 1/R) \tab One-sided bootstrap p-value for exceedance at most 1. Not a posterior probability. \cr
 \code{lower}, \code{upper}, \code{prob} (\code{\link[=lag_ceiling_bayesboot]{lag_ceiling_bayesboot()}}, \code{\link[=lag_ceiling_stan]{lag_ceiling_stan()}}) \tab as the statistic; 0 to 1 \tab A credible interval and \code{P(exceedance > 1)}, under a stated prior. The Bayesian bootstrap keeps the estimand of \code{\link[=lag_ceiling]{lag_ceiling()}}; the Stan model estimates the concentration of the expected series instead, which is lower. \cr
 \code{vmr} (\code{\link[=ceiling_calibration]{ceiling_calibration()}}) \tab above 1 \tab 1 is Poisson and larger is more clumped. Below 1 the negative binomial does not exist. \cr
 \code{phi} (\code{\link[=phi_moment]{phi_moment()}}) \tab above 0 \tab Variance is \eqn{\mu + \mu^2/\phi}{mu + mu^2/phi}. Small is strongly clumped and very large is Poisson. Density dependent, so not comparable across means. \cr
@@ -45,6 +45,14 @@ what the ASA statement on p-values advises against (Wasserstein and Lazar
 2016), and for the concentration indices no cutoff is taken from the
 literature, because the level of an index carries no verdict on its own:
 the inference lives in the comparison between series of equal length.
+A few fixed values do appear, and each is a working convention for when
+to warn or where to draw a reference line, never a verdict: the sampler
+diagnostics of \code{\link[=lag_ceiling_stan]{lag_ceiling_stan()}} warn at Rhat 1.01 and bulk ESS 100,
+\code{\link[=lag_ceiling_boot]{lag_ceiling_boot()}} warns below ten units, \code{\link[=rain_intervals]{rain_intervals()}} flags an
+interval more than 20\% from the median, \code{\link[=recruit_triage]{recruit_triage()}} marks a
+dormancy run as improbable when its probability falls below 0.01, and
+\code{\link[=plot.host_lag_test]{plot.host_lag_test()}} draws a dotted line at 0.05. Each is documented
+where it is used and none changes a number the package returns.
 }
 
 \references{
@@ -55,13 +63,13 @@ context, process, and purpose. \emph{The American Statistician} 70: 129-133.
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/raymondltremblay/recruitlag}
-  \item Report bugs at \url{https://github.com/raymondltremblay/recruitlag/issues}
+  \item \url{https://github.com/RaymondLTremblay/recruitlag}
+  \item Report bugs at \url{https://github.com/RaymondLTremblay/recruitlag/issues}
 }
 
 }
 \author{
-\strong{Maintainer}: Raymond L. Tremblay \email{raymond.tremblay@gmail.com} (\href{https://orcid.org/0000-0002-8588-4372}{ORCID})
+\strong{Maintainer}: Raymond L. Tremblay \email{raymond.tremblay@gmail.com} (\href{https://orcid.org/0000-0002-8588-4372}{ORCID}) [copyright holder]
 
 }
 \keyword{internal}

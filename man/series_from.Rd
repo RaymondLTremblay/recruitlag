@@ -24,7 +24,9 @@ A list with \code{X} (reproduction at periods 1 to the last), \code{R}
 }
 \description{
 Sums (or takes, if there is one row per period) reproduction and recruits
-by period. Periods at which \code{recruits} is \code{NA} are unscored.
+by period. Periods at which \code{recruits} is \code{NA} in every row are unscored;
+a period at which some rows are \code{NA} and others carry a count is summed
+over the rows with a count, with a warning.
 }
 \examples{
 series_from(lepanthes_census, reproduction = "inflorescences")

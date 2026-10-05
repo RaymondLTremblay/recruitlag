@@ -222,7 +222,10 @@ interval_table <- function(point, draws, level, type, jack = NULL) {
 #' and Hinkley (1997, ch. 3). With few units (the *Lepanthes eltoroensis*
 #' record has 23) the BCa interval is preferred to the percentile one, since
 #' it corrects for the skew a ratio carries and for the bias between the
-#' bootstrap distribution and the estimate.
+#' bootstrap distribution and the estimate. Below ten units the function
+#' warns that the bootstrap distribution has few distinct values; ten is a
+#' working convention of this package for when to say so, not a published
+#' minimum, and the interval is still computed.
 #'
 #' **What the interval does not say.** A wide interval does not weaken the
 #' ceiling, which is a bound and not an estimate. It says how firmly the
@@ -254,7 +257,7 @@ lag_ceiling_boot <- function(data, unit = "unit", period = "period",
                              missing = c("backfill", "drop"),
                              R = 2000L, level = 0.9, type = c("bca", "percentile")) {
   missing <- match.arg(missing); type <- match.arg(type)
-  check_level(level)
+  rl_check_level(level)
   if (!is.numeric(R) || length(R) != 1 || R < 2 || R != round(R))
     rl_abort("R must be a single whole number of replicates, at least 2. It was given as ",
              paste(format(R), collapse = ", "), ".")
@@ -280,11 +283,12 @@ lag_ceiling_boot <- function(data, unit = "unit", period = "period",
             "the rest. With this many failures the units carrying the record are few, ",
             "and the interval should be read with that in mind.")
   tab <- interval_table(point, draws, level, type, jack)
-  ok <- stats::complete.cases(draws)
-  p_boot <- c(gini = mean(draws[ok, "exceedance_gini"] <= 1),
-              cv = mean(draws[ok, "exceedance_cv"] <= 1))
+  p_boot <- c(gini = tail_prob(draws[, "exceedance_gini"], upper = FALSE),
+              cv = tail_prob(draws[, "exceedance_cv"], upper = FALSE))
   structure(list(method = "bootstrap", estimand = "realised counts",
                  point = point, draws = draws, jack = jack, table = tab, p_boot = p_boot,
+                 n_used = c(gini = sum(is.finite(draws[, "exceedance_gini"])),
+                            cv = sum(is.finite(draws[, "exceedance_cv"]))),
                  n_units = H, R = R, n_failed = n_failed, level = level, type = type,
                  K = K, lag0 = lag0, missing = missing, kernels = kernels, t_R = su$t_R),
             class = "lag_ceiling_draws")
@@ -361,7 +365,7 @@ lag_ceiling_bayesboot <- function(data, unit = "unit", period = "period",
                                   missing = c("backfill", "drop"),
                                   draws = 4000L, level = 0.9, interval = c("eti", "hdi")) {
   missing <- match.arg(missing); interval <- match.arg(interval)
-  check_level(level)
+  rl_check_level(level)
   if (!is.numeric(draws) || length(draws) != 1 || draws < 2 || draws != round(draws))
     rl_abort("draws must be a single whole number of posterior draws, at least 2. It was ",
              "given as ", paste(format(draws), collapse = ", "), ".")
@@ -377,19 +381,24 @@ lag_ceiling_bayesboot <- function(data, unit = "unit", period = "period",
   n_failed <- sum(!stats::complete.cases(D))
   tab <- interval_table(point, D, level, interval)
   ok <- stats::complete.cases(D)
-  prob <- c(gini = mean(D[ok, "exceedance_gini"] > 1), cv = mean(D[ok, "exceedance_cv"] > 1))
+  prob <- c(gini = tail_prob(D[, "exceedance_gini"], upper = TRUE),
+            cv = tail_prob(D[, "exceedance_cv"], upper = TRUE))
   structure(list(method = "bayesian bootstrap", estimand = "realised counts",
                  point = point, draws = D, table = tab, prob = prob,
+                 n_used = c(gini = sum(is.finite(D[, "exceedance_gini"])),
+                            cv = sum(is.finite(D[, "exceedance_cv"]))),
                  n_units = H, R = draws, n_failed = n_failed, level = level, type = interval,
                  K = K, lag0 = lag0, missing = missing, kernels = kernels, t_R = su$t_R),
             class = "lag_ceiling_draws")
 }
 
-check_level <- function(level) {
-  if (!is.numeric(level) || length(level) != 1 || is.na(level) || level <= 0 || level >= 1)
-    rl_abort("level must be a single number strictly between 0 and 1, the coverage of the ",
-             "interval (for example 0.9). It was given as ", paste(format(level), collapse = ", "), ".")
-  invisible(TRUE)
+# The share of finite replicates of one statistic on one side of 1. Each
+# statistic uses its own finite replicates: a replicate on which only the CV
+# failed still counts for the Gini. NA when no replicate is finite.
+tail_prob <- function(v, upper) {
+  v <- v[is.finite(v)]
+  if (!length(v)) return(NA_real_)
+  if (upper) mean(v > 1) else mean(v <= 1)
 }
 
 # ---- methods shared by the three routes -------------------------------------
@@ -414,14 +423,26 @@ print.lag_ceiling_draws <- function(x, digits = 3, ...) {
                 f(tab$lower[i], d), f(tab$upper[i], d),
                 if (nzchar(tab$note[i])) paste0("   (", tab$note[i], ")") else ""))
   }
+  n_used <- if (is.null(x$n_used)) c(gini = x$R, cv = x$R) else x$n_used
   if (x$method == "bootstrap") {
-    fp <- function(p) if (p == 0) sprintf("< %s", format(1 / x$R, digits = 2)) else format(p, digits = 2)
+    fp <- function(p, n) {
+      if (is.na(p)) "NA (no replicate could compute it)"
+      else if (p == 0) sprintf("< %s", format(1 / n, digits = 2)) else format(p, digits = 2)
+    }
     cat(sprintf("  one-sided bootstrap p-value for exceedance <= 1: Gini %s, CV %s\n",
-                fp(x$p_boot[["gini"]]), fp(x$p_boot[["cv"]])))
+                fp(x$p_boot[["gini"]], n_used[["gini"]]), fp(x$p_boot[["cv"]], n_used[["cv"]])))
     cat("  A confidence interval, read in the usual way; p_boot is not a posterior probability.\n")
   } else {
-    fp <- function(p) if (p == 1) sprintf("> %s", format(1 - 1 / x$R, digits = 4)) else format(p, digits = 3)
-    cat(sprintf("  P(exceedance > 1): Gini %s, CV %s\n", fp(x$prob[["gini"]]), fp(x$prob[["cv"]])))
+    fp <- function(p, n) {
+      # A probability below 1 is never printed as a bare "1": near the top it
+      # is shown to four decimals, and exactly 1 as "above 1 - 1/n".
+      if (is.na(p)) "NA (no draw could compute it)"
+      else if (p == 1) sprintf("> %s", format(1 - 1 / n, digits = 4))
+      else if (p > 0.9995) sprintf("%.4f", p)
+      else format(p, digits = 3)
+    }
+    cat(sprintf("  P(exceedance > 1): Gini %s, CV %s\n",
+                fp(x$prob[["gini"]], n_used[["gini"]]), fp(x$prob[["cv"]], n_used[["cv"]])))
   }
   if (x$method == "stan" && !is.null(x$diagnostics)) {
     d <- x$diagnostics

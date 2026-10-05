@@ -20,7 +20,7 @@
 #'   `expected_returns`, `excess` ([recruit_triage()]) \tab counts of plants \tab How many first sightings the record's own dormancy would produce from plants present but unseen at the first period, and what is left over (recruitment plus search effort). \cr
 #'   `detection` ([recruit_triage()]) \tab 0 to 1 \tab Share of periods, between a plant's first and last sighting, at which it was seen; the conventional estimate of resighting given survival, biased upward. \cr
 #'   `lower`, `upper` ([lag_ceiling_boot()]) \tab as the statistic \tab A confidence interval from resampling units, BCa by default; read in the usual way. \cr
-#'   `p_boot` ([lag_ceiling_boot()]) \tab 1/R to 1 \tab One-sided bootstrap p-value for exceedance at most 1. Not a posterior probability. \cr
+#'   `p_boot` ([lag_ceiling_boot()]) \tab 0 to 1 (0 is printed as below 1/R) \tab One-sided bootstrap p-value for exceedance at most 1. Not a posterior probability. \cr
 #'   `lower`, `upper`, `prob` ([lag_ceiling_bayesboot()], [lag_ceiling_stan()]) \tab as the statistic; 0 to 1 \tab A credible interval and `P(exceedance > 1)`, under a stated prior. The Bayesian bootstrap keeps the estimand of [lag_ceiling()]; the Stan model estimates the concentration of the expected series instead, which is lower. \cr
 #'   `vmr` ([ceiling_calibration()]) \tab above 1 \tab 1 is Poisson and larger is more clumped. Below 1 the negative binomial does not exist. \cr
 #'   `phi` ([phi_moment()]) \tab above 0 \tab Variance is \eqn{\mu + \mu^2/\phi}{mu + mu^2/phi}. Small is strongly clumped and very large is Poisson. Density dependent, so not comparable across means. \cr
@@ -36,6 +36,14 @@
 #' 2016), and for the concentration indices no cutoff is taken from the
 #' literature, because the level of an index carries no verdict on its own:
 #' the inference lives in the comparison between series of equal length.
+#' A few fixed values do appear, and each is a working convention for when
+#' to warn or where to draw a reference line, never a verdict: the sampler
+#' diagnostics of [lag_ceiling_stan()] warn at Rhat 1.01 and bulk ESS 100,
+#' [lag_ceiling_boot()] warns below ten units, [rain_intervals()] flags an
+#' interval more than 20% from the median, [recruit_triage()] marks a
+#' dormancy run as improbable when its probability falls below 0.01, and
+#' [plot.host_lag_test()] draws a dotted line at 0.05. Each is documented
+#' where it is used and none changes a number the package returns.
 #'
 #' @references
 #' Wasserstein, R. L. and Lazar, N. A. (2016) The ASA statement on p-values:

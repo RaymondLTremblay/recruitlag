@@ -99,7 +99,10 @@
 #' **Read the sampler diagnostics before the interval.** Divergent
 #' transitions, an Rhat above about 1.01 or a bulk ESS below about 100 mean
 #' the posterior was not explored and the interval is not to be trusted. The
-#' function warns, and the printed summary carries the numbers. Transitions
+#' function warns at those values, and the printed summary carries the
+#' numbers. The two cutoffs are working conventions of this package for
+#' deciding when to warn, not published thresholds; the interval itself is
+#' never altered by them. Transitions
 #' that hit the maximum tree depth are an efficiency warning, not a validity
 #' one, but many of them with a poor Rhat mean the chains sat in different
 #' regions.
@@ -134,7 +137,7 @@ lag_ceiling_stan <- function(data, unit = "unit", period = "period",
                              level = 0.9, interval = c("eti", "hdi"),
                              refresh = 0, ...) {
   missing <- match.arg(missing); interval <- match.arg(interval)
-  check_level(level)
+  rl_check_level(level)
   if (!is.numeric(phi_prior) || length(phi_prior) != 2 || any(phi_prior <= 0))
     rl_abort("phi_prior must be two positive numbers, the shape and rate of the gamma prior ",
              "on the clumping parameter, for example c(2, 0.1). It was given as ",
@@ -143,10 +146,12 @@ lag_ceiling_stan <- function(data, unit = "unit", period = "period",
     rl_abort("sigma_scale must be a single positive number, the scale of the half-t priors ",
              "on the effect standard deviations. It was given as ",
              paste(format(sigma_scale), collapse = ", "), ".")
-  need_cmdstan()
+  # The data are validated before CmdStan is looked for, so that a wrong
+  # column name is reported as such and not hidden behind an install message.
   su <- uncertainty_setup(data, unit, period, reproduction, recruits, K, lag0, kernels,
                           missing, "lag_ceiling_stan()")
-  check_counts(su$R, recruits, "recruits")
+  rl_check_counts(su$R, recruits, "recruits")
+  rl_need_cmdstan()
 
   if (!is.numeric(threads_per_chain) || length(threads_per_chain) != 1 || threads_per_chain < 1)
     rl_abort("threads_per_chain must be a single whole number of 1 or more. It was given as ",
@@ -186,9 +191,12 @@ lag_ceiling_stan <- function(data, unit = "unit", period = "period",
   ok <- stats::complete.cases(D)
   point <- apply(D[ok, , drop = FALSE], 2, stats::median)
   tab <- interval_table(point, D, level, interval)
-  prob <- c(gini = mean(D[ok, "exceedance_gini"] > 1), cv = mean(D[ok, "exceedance_cv"] > 1))
+  prob <- c(gini = tail_prob(D[, "exceedance_gini"], upper = TRUE),
+            cv = tail_prob(D[, "exceedance_cv"], upper = TRUE))
 
-  pars <- c("a_r", "s_ur", "s_vr", "phi_r")
+  # The diagnostics cover the quantity that is reported (ER, the expected
+  # series) and the period effects that feed it, not only the hyperparameters.
+  pars <- c("a_r", "s_ur", "s_vr", "phi_r", "v_r", "ER")
   sm <- fit$summary(variables = pars)
   ds <- fit$diagnostic_summary(quiet = TRUE)
   diagnostics <- list(divergences = sum(ds$num_divergent),
@@ -208,24 +216,11 @@ lag_ceiling_stan <- function(data, unit = "unit", period = "period",
                  point = point, draws = D, table = tab, prob = prob,
                  diagnostics = diagnostics, fit = fit,
                  n_units = su$n_units, R = nrow(D), n_failed = n_failed,
+                 n_used = c(gini = sum(is.finite(D[, "exceedance_gini"])),
+                            cv = sum(is.finite(D[, "exceedance_cv"]))),
                  level = level, type = interval,
                  K = K, lag0 = lag0, missing = missing, kernels = kernels, t_R = su$t_R),
             class = "lag_ceiling_draws")
-}
-
-# cmdstanr and CmdStan, or a message saying how to get them.
-need_cmdstan <- function() {
-  if (!requireNamespace("cmdstanr", quietly = TRUE))
-    rl_abort("lag_ceiling_stan() needs the cmdstanr package, which is not on CRAN. Install it with\n",
-             '  install.packages("cmdstanr", repos = c("https://stan-dev.r-universe.dev", getOption("repos")))\n',
-             "and then CmdStan itself with cmdstanr::install_cmdstan(). The two bootstrap ",
-             "functions, lag_ceiling_boot() and lag_ceiling_bayesboot(), need neither.")
-  v <- tryCatch(cmdstanr::cmdstan_version(), error = function(e) NULL)
-  if (is.null(v))
-    rl_abort("cmdstanr is installed but CmdStan itself was not found. Install it with ",
-             "cmdstanr::install_cmdstan(), or point cmdstanr at an existing installation with ",
-             "cmdstanr::set_cmdstan_path().")
-  invisible(TRUE)
 }
 
 # Compile once into the user's cache directory and reuse. The .stan file is
@@ -244,20 +239,4 @@ stan_model_cached <- function(name, threads = FALSE) {
   if (!file.exists(dst) || !identical(readLines(src), readLines(dst))) file.copy(src, dst, overwrite = TRUE)
   if (threads) cmdstanr::cmdstan_model(dst, quiet = TRUE, cpp_options = list(stan_threads = TRUE))
   else cmdstanr::cmdstan_model(dst, quiet = TRUE)
-}
-
-# The negative binomial is a distribution for counts: whole, non-negative. Used by every
-# function that simulates or models counts; `why` names the caller's reason.
-check_counts <- function(M, column, role,
-                         why = paste0("lag_ceiling_stan() fits a negative-binomial model, which is a ",
-                                      "distribution for counts, so the recruits must be whole numbers.")) {
-  v <- M[!is.na(M)]
-  bad <- v[v != round(v)]
-  if (length(bad))
-    rl_abort('The ', role, ' column "', column, '" has non-whole values (',
-             rl_list(format(utils::head(sort(unique(bad)), 4))), "). ", why,
-             " If this column is a rate, a biomass or a model estimate, pass the count it was ",
-             "made from instead; lag_ceiling() and the two bootstrap functions accept any ",
-             "non-negative series, because the concentration indices are scale-free.")
-  invisible(TRUE)
 }

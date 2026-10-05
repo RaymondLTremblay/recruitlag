@@ -3,6 +3,32 @@
 First release. The software behind the companion paper on *Lepanthes eltoroensis*
 (Tremblay, submitted to *Oikos*, 2026).
 
+## Behaviour settled in the pre-release review (2026-10-05)
+
+* `expected_recruits()` pairs each unit's recruits with its own reproduction by row
+  name, whatever the row order of `X`.
+* With `missing = "drop"`, `lag_ceiling()` leaves the scored periods whose lag window
+  reaches before the record out of the observed series too, so that the observed and
+  the expected concentration are measured on the same periods (`n_dropped` says how
+  many).
+* A flat reproductive record gives an exceedance of `NA` (with `flat = TRUE`), not
+  `Inf`; `rain_gini()` cannot return a negative value from rounding.
+* `lag_ceiling_by()` applies `min_periods` to scored periods, and reports the per-unit
+  warnings once with the units they concern instead of silencing them.
+* `convolve_lag()` refuses a record too short for the window and validates `t_R` and
+  `lag0`; lag weights are validated everywhere a profile is applied.
+* `recruit_triage()` refuses a long data frame with a misnamed column instead of reading
+  it as a wide matrix, and refuses `species =` together with `s`/`r`.
+* The bootstrap and posterior probabilities use the finite replicates of their own
+  statistic; the print method no longer fails when none is finite.
+* `host_matrices()` and `series_from()` warn when missing recruits are read as zero.
+* The Stan diagnostics cover `ER`, the expected series that is reported, and the period
+  effects. CmdStan is looked for after the data are validated.
+* Every user-facing check lives in `checks.R`; the all-zero-reproduction diagnosis is a
+  classed condition (`recruitlag_zero_lagged`).
+* The introductory vignette is `recruitlag` (formerly `baby-steps`). Lag bins are
+  labelled from the first lagged census (0-6, 6-12, ..., 24-30 months) in all prose.
+
 ## The check
 
 * `lag_ceiling()`: the concentration ceiling that any delay of a reproductive record
@@ -53,6 +79,7 @@ First release. The software behind the companion paper on *Lepanthes eltoroensis
 ## Data and vignettes
 
 * Bundled: `lepanthes_census`, `lepanthes_hosts`, `lepanthes_monthly`, `lepanthes_profile`,
-  `regimes`, `caladenia_dormancy`.
-* Vignettes: `baby-steps`, `invented-regimes`, `lepanthes`, `mathematics`, `intervals`.
+  `regimes`, `regimes_truth`, `caladenia_dormancy`.
+* Vignettes: `recruitlag` (introduction), `invented-regimes`, `lepanthes`, `mathematics`,
+  `intervals`.
 * Every user-facing message says what is wrong, in which column, and what to do.

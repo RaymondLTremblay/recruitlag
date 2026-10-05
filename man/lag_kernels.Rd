@@ -19,8 +19,9 @@ lag_kernels(
 \arguments{
 \item{K}{Lag horizon: the number of bins beyond the first, so that a kernel
 has \code{K + 1} weights. The paper uses \code{K = 6} for monthly data (lags 0 to 6
-months) and \code{K = 4} for six-monthly data (five bins, 6 to 30 months
-before the recruit census).}
+months) and \code{K = 4} for six-monthly data (five six-month bins, labelled
+0-6 to 24-30 months, counted from the first lagged census; see \code{lag0}
+in \code{\link[=convolve_lag]{convolve_lag()}}).}
 
 \item{families}{Which families to include. \code{"delay"}: pure delays, all
 weight on one bin (these attain the ceiling). \code{"window"}: uniform windows
@@ -69,8 +70,11 @@ scale is carried elsewhere and never enters the ceiling.
 
 \strong{\code{K}, the horizon, in bins and in time.} A kernel covers \code{K + 1} bins,
 so with \code{bin} months per bin the horizon reaches \code{bin * (K + 1)} months
-back from the first lagged bin. The paper's \code{K = 4} with \code{bin = 6} and
-\code{lag0 = 1} searches 6 to 30 months before the recruit census. Nothing
+back from the first lagged bin. The labels count from that first lagged
+bin, not from the recruit census: with \code{lag0 = 1} the first bin is the
+census before the recruit census, and the label "0-6 mo" means the first
+six months of the lag window. The paper's \code{K = 4} with \code{bin = 6} searches
+a 30-month window, labelled 0-6 to 24-30 months. Nothing
 outside the horizon is tested, so a delay longer than \code{bin * (K + 1)} is
 not refuted by a small verdict: state the horizon whenever the result is
 reported.

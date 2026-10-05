@@ -45,9 +45,14 @@ frame.}
 An object of class \code{lag_ceiling} with elements \code{obs} (the
 concentration of \code{R}), \code{theorem} (the concentration of \code{X}, which is the
 bound), \code{ceiling} (the largest Gini and CV any searched kernel produced
-on the periods \code{t_R}), \code{exceedance} (observed over ceiling), \code{best} (the
-kernel attaining the ceiling), \code{search} (a data frame with one row per
-kernel) and the inputs.
+on the periods \code{t_R}), \code{exceedance} (observed over ceiling; \code{NA} when the
+reproductive record is flat, since the ceiling is then 0 and the ratio
+undefined, with \code{flat = TRUE}), \code{best} (the kernel attaining the
+ceiling), \code{search} (a data frame with one row per kernel) and the inputs.
+With \code{missing = "drop"}, scored periods whose lag window reaches before
+the record are left out of \code{R} and \code{t_R}, so that the observed and the
+expected series are compared on the same periods; \code{n_dropped} counts
+them.
 }
 \description{
 If recruitment is the delayed consequence of reproduction, expected

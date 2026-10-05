@@ -24,9 +24,11 @@
 #' @param unit Time unit for the report, `"mo"` (default), `"yr"` or `"day"`.
 #' @param tolerance An interval is called irregular when it differs from the
 #'   median interval by more than this fraction of the median. The default 0.2
-#'   allows a visit a fortnight early in a six-monthly schedule.
+#'   allows a visit a fortnight early in a six-monthly schedule. It is a
+#'   working convention of this package, not a published cutoff, and it
+#'   decides only which intervals are flagged in the report.
 #'
-#' @return An object of class `rain_intervals`, invisibly a data frame with one
+#' @return An object of class `rain_intervals`, a data frame with one
 #'   row per interval: the two periods, the two dates, the gap, the ratio to
 #'   the median gap, and, when `persistence` is given, the persistence to
 #'   interval ratio. `print()` gives the report.
@@ -36,8 +38,9 @@
 #' Three numbers matter, and each answers a different question.
 #'
 #' **The ratio to the median interval** says whether the period index is
-#' honest. At 1 the visit fell where the schedule says. Intervals below about
-#' 0.8 or above about 1.25 mean the period index is not a time axis, and both
+#' honest. At 1 the visit fell where the schedule says. Intervals that differ
+#' from the median by more than `tolerance` (one fifth of the median by
+#' default) are flagged: the period index is then not a time axis, and both
 #' the reproduction and the recruit series are then partly a record of how long
 #' the crew waited rather than of what the plants did. A short interval catches
 #' fewer recruits and fewer fruits than a long one for reasons that have
@@ -220,6 +223,9 @@ print.rain_intervals <- function(x, ...) {
         "intervals either, since a longer interval accumulates more of everything.\n",
         "There is no correction for this in the package: report the whole record, or\n",
         "analyse a run of intervals that really are equal.\n", sep = "")
+  } else if (is.na(med) || anyNA(x$interval)) {
+    cat("\nNo dated interval departs from the median, but some intervals are unknown, so\n",
+        "whether the period index is a time axis cannot be checked from these dates.\n", sep = "")
   } else {
     cat(sprintf("\nAll intervals are within %.0f%% of the median, so the period index is a time axis.\n",
                 100 * tol))

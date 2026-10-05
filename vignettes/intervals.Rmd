@@ -61,6 +61,9 @@ bb <- lag_ceiling_bayesboot(lepanthes_hosts, unit = "host", reproduction = "infl
 knitr::kable(ceiling_draws_table(`cluster bootstrap` = b, `Bayesian bootstrap` = bb)[
   , c("record", "quantity", "estimate", "lower", "upper", "interval", "probability", "probability_is")],
   digits = 2)
+# the numbers quoted in the sentences below, taken from the two objects
+ex <- function(o) o$table[o$table$quantity == "exceedance Gini", ]
+fb <- ex(b); fbb <- ex(bb)
 ```
 
 ### The cluster bootstrap: a confidence interval
@@ -85,8 +88,9 @@ and the bias-corrected version can fail; the function warns below ten units
 and flags a failed row. It also cannot be applied to a series that has
 already been pooled over units, because there is nothing left to resample.
 
-*The sentence.* "The exceedance was 2.56 (90% confidence interval 2.1 to
-3.2, cluster bootstrap over host trees)."
+*The sentence.* "The exceedance was `r round(fb$estimate, 2)` (90% confidence
+interval `r round(fb$lower, 1)` to `r round(fb$upper, 1)`, cluster bootstrap
+over host trees)."
 
 ### The Bayesian bootstrap: a credible interval, same quantity
 
@@ -114,9 +118,10 @@ the reader who does not accept Bayesian probability statements will read the
 interval as if it were a confidence interval, which is approximately right
 here and not something the package can prevent.
 
-*The sentence.* "The exceedance was 2.56 (90% credible interval 2.1 to 3.0,
-Bayesian bootstrap over host trees); the posterior probability that it
-exceeds 1 is above 0.999."
+*The sentence.* "The exceedance was `r round(fbb$estimate, 2)` (90% credible
+interval `r round(fbb$lower, 1)` to `r round(fbb$upper, 1)`, Bayesian
+bootstrap over host trees); the posterior probability that it exceeds 1 is
+`r if (bb$prob[["gini"]] == 1) "above 0.999" else round(bb$prob[["gini"]], 3)`."
 
 ### The negative-binomial model: a credible interval, different quantity
 
@@ -238,18 +243,25 @@ result a probability.
 | the quantity the bound applies to, with sampling noise removed | `lag_ceiling_stan()` | equal-tailed (or HDI), a credible interval | "90% CrI", `P(> 1)`, and the sampler diagnostics |
 
 Whichever you choose, report the route and the recipe with the numbers,
-because the reader cannot tell them apart from the digits: "2.56 (90% BCa
-CI 2.1 to 3.2, cluster bootstrap over 23 host trees)" carries everything
-needed to read it, and "2.56 (2.1 to 3.2)" does not. `ceiling_draws_table()`
+because the reader cannot tell them apart from the digits:
+"`r round(fb$estimate, 2)` (90% BCa CI `r round(fb$lower, 1)` to
+`r round(fb$upper, 1)`, cluster bootstrap over 23 host trees)" carries
+everything needed to read it, and "`r round(fb$estimate, 2)`
+(`r round(fb$lower, 1)` to `r round(fb$upper, 1)`)" does not. `ceiling_draws_table()`
 carries those labels in its columns, and `rain_forest()` draws the routes
 side by side so that a disagreement between them, which is where the
 reading gets interesting, is seen rather than searched for.
 
 ```{r, fig.height = 2.6}
-rain_forest(`L. eltoroensis, 23 hosts` = b, `L. eltoroensis, 23 hosts` = bb, index = "both")
+rain_forest(`23 host trees` = b, `23 host trees` = bb, index = "both")
 ```
 
 ## References
+
+The BCa interval is Efron (1987); DiCiccio and Efron (1996) and Davison and
+Hinkley (1997) review the bootstrap intervals; Rubin (1981) is the Bayesian
+bootstrap; Gelman et al. (2013) is the standard reference for credible
+intervals and the HDI.
 
 Efron, B. (1987) Better bootstrap confidence intervals. *Journal of the
 American Statistical Association* 82: 171-185.

@@ -14,12 +14,13 @@
 #' @param kernels A `lag_kernels` object, used for every unit so that the
 #'   units are compared on the same family.
 #' @param missing Treatment of pre-record lags (see [convolve_lag()]).
-#' @param min_periods Units with fewer scored periods than this are skipped.
-#'   The default `K + 3` is the shortest record on which a horizon of `K + 1`
-#'   bins leaves anything to compare.
+#' @param min_periods Units with fewer scored periods (periods at which
+#'   recruits were counted) than this are skipped. The default `K + 3` is the
+#'   shortest record on which a horizon of `K + 1` bins leaves anything to
+#'   compare.
 #' @param min_recruits Units with fewer recruits than this are skipped, since
-#'   a unit with one recruit has concentration 1 by arithmetic rather than by
-#'   biology.
+#'   a unit with one recruit has the maximum concentration, \eqn{(n-1)/n}, by
+#'   arithmetic rather than by biology.
 #'
 #' @details Rows in which both reproduction and recruits are missing are
 #'   taken as periods in which that unit was not watched, and are dropped
@@ -39,9 +40,11 @@
 #' @section Scale and how to read it:
 #'
 #' The columns of `as.data.frame()` carry the scales of [lag_ceiling()]:
-#' `ceiling` and `observed` are concentration indices bounded above by
-#' \eqn{(n-1)/n} for the Gini, where `n` is that unit's own number of scored
-#' periods, and `exceedance` is their ratio, centred on 1.
+#' `ceiling_gini` and `observed_gini` are concentration indices bounded above
+#' by \eqn{(n-1)/n}, where `n` is that unit's own number of scored periods,
+#' and `exceedance_gini` and `exceedance_cv` are the ratios, centred on 1.
+#' A unit whose reproductive record is flat has no ceiling to exceed, and its
+#' exceedance is `NA` with the reason in `best_kernel`.
 #'
 #' Because `n` differs between units, two cautions apply to reading the table
 #' or the figure down a column. A unit with few periods has a lower attainable
@@ -86,27 +89,37 @@ lag_ceiling_by <- function(data, unit = "unit", period = "period",
     rl_abort("Every row has neither reproduction nor recruits, so there is nothing to do.")
 
   parts <- split(data, as.character(data[[unit]]))
-  out <- list(); skipped <- character(0)
+  out <- list(); skipped <- character(0); warned <- list()
   for (nm in names(parts)) {
     s <- parts[[nm]]
     s <- s[!is.na(s[[period]]), , drop = FALSE]
     scored <- sum(!is.na(s[[recruits]]))
     nrec <- sum(s[[recruits]], na.rm = TRUE)
-    if (nrow(s) < min_periods) {
-      skipped[nm] <- sprintf("%d periods, fewer than min_periods = %d", nrow(s), min_periods); next
-    }
     if (scored == 0) { skipped[nm] <- "no period with a recruit count"; next }
+    if (scored < min_periods) {
+      skipped[nm] <- sprintf("%d scored periods, fewer than min_periods = %d", scored, min_periods); next
+    }
     if (nrec < min_recruits) {
       skipped[nm] <- sprintf("%g recruits, fewer than min_recruits = %g", nrec, min_recruits); next
     }
     s[[period]] <- as.integer(s[[period]]) - min(as.integer(s[[period]])) + 1L
-    ce <- tryCatch(suppressWarnings(
-            lag_ceiling(s, K = K, lag0 = lag0, kernels = kernels, missing = missing,
-                        period = period, reproduction = reproduction, recruits = recruits)),
-                   error = function(e) e)
+    # Warnings from the per-unit call are collected and reported once at the
+    # end, with the units they concern, rather than printed once per unit or
+    # silenced.
+    ce <- withCallingHandlers(
+      tryCatch(lag_ceiling(s, K = K, lag0 = lag0, kernels = kernels, missing = missing,
+                           period = period, reproduction = reproduction, recruits = recruits),
+               error = function(e) e),
+      warning = function(w) {
+        msg <- conditionMessage(w)
+        warned[[msg]] <<- c(warned[[msg]], nm)
+        invokeRestart("muffleWarning")
+      })
     if (inherits(ce, "error")) { skipped[nm] <- conditionMessage(ce); next }
     out[[nm]] <- ce
   }
+  for (msg in names(warned))
+    rl_warn("For unit(s) ", rl_list(warned[[msg]]), ": ", msg)
   if (!length(out))
     rl_abort("No unit could be given a ceiling. All ", length(parts),
              " were skipped, for these reasons:\n  ",
@@ -150,7 +163,7 @@ as.data.frame.lag_ceiling_list <- function(x, ...) {
     # an exceedance of observed / 0. That is not a large exceedance, it is a
     # unit on which the ratio is undefined, and it is reported as such.
     ex_g <- unname(o$exceedance["gini"]); ex_c <- unname(o$exceedance["cv"])
-    flat <- is.finite(unname(o$ceiling["gini"])) && unname(o$ceiling["gini"]) == 0
+    flat <- isTRUE(o$flat)
     data.frame(unit = nm,
                n = length(o$R),
                mean_recruits = mean(o$R),
@@ -227,6 +240,8 @@ rain_indices <- function(data, reproduction, period = "period", recruits = "recr
   rl_check_kernels(kernels, K)
 
   do.call(rbind, lapply(reproduction, function(v) {
+    # Warnings about this column (missing values read as zero) are suppressed
+    # here because the table reports n_missing for every candidate.
     ce <- tryCatch(suppressWarnings(
       lag_ceiling(data, period = period, reproduction = v, recruits = recruits,
                   K = K, lag0 = lag0, kernels = kernels, missing = missing)),
@@ -237,7 +252,7 @@ rain_indices <- function(data, reproduction, period = "period", recruits = "recr
       # belongs in the table as a result. Anything else is wrong with the call
       # or with the data as a whole, is wrong for every candidate, and would be
       # mislabelled if it were reported as "lagged reproduction is zero".
-      if (!grepl("all-zero expected series", msg, fixed = TRUE))
+      if (!inherits(ce, "recruitlag_zero_lagged"))
         rl_abort("rain_indices() failed on the candidate column \"", v, "\", and the ",
                  "reason is not specific to that column, so the whole table would be ",
                  "wrong. The underlying error was:\n  ", sub("\n", "\n  ", msg))

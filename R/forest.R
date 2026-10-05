@@ -68,7 +68,7 @@ method_label <- function(m) c(bootstrap = "cluster bootstrap", `bayesian bootstr
 #'                        K = 4, kernels = k, R = 200)
 #' bb <- lag_ceiling_bayesboot(lepanthes_hosts, unit = "host", reproduction = "inflorescences",
 #'                             K = 4, kernels = k, draws = 200)
-#' ceiling_draws_table(`L. eltoroensis` = b, `L. eltoroensis` = bb)
+#' ceiling_draws_table(`23 host trees` = b, `23 host trees` = bb)
 #' @export
 ceiling_draws_table <- function(..., .list = NULL, quantity = "exceedance") {
   x <- collect_draws(list(...), .list, "ceiling_draws_table()")
@@ -134,7 +134,7 @@ ceiling_draws_table <- function(..., .list = NULL, quantity = "exceedance") {
 #'                        K = 4, kernels = k, R = 200)
 #' bb <- lag_ceiling_bayesboot(lepanthes_hosts, unit = "host", reproduction = "inflorescences",
 #'                             K = 4, kernels = k, draws = 200)
-#' rain_forest(`L. eltoroensis` = b, `L. eltoroensis` = bb, index = "both")
+#' rain_forest(`23 host trees` = b, `23 host trees` = bb, index = "both")
 #' @export
 rain_forest <- function(..., .list = NULL, index = c("gini", "cv", "both"),
                         order = c("estimate", "name")) {
@@ -144,6 +144,10 @@ rain_forest <- function(..., .list = NULL, index = c("gini", "cv", "both"),
   if (index != "both") d <- d[d$index == (if (index == "gini") "Gini" else "CV"), , drop = FALSE]
   d <- d[is.finite(d$estimate), , drop = FALSE]
   if (!nrow(d)) rl_abort("No finite exceedance to draw.")
+  if (length(unique(d$level)) > 1)
+    rl_abort("The objects were built at different interval levels (",
+             rl_list(sort(unique(d$level))), "), so one figure cannot label them. ",
+             "Rebuild them with the same level =.")
   d$method <- factor(d$method, levels = c("cluster bootstrap", "Bayesian bootstrap", "negative-binomial model"))
   recs <- unique(d$record)
   if (order == "estimate") {
@@ -156,7 +160,8 @@ rain_forest <- function(..., .list = NULL, index = c("gini", "cv", "both"),
   d$record <- factor(d$record, levels = recs)
   d$index <- factor(d$index, levels = c("Gini", "CV"))
   lo <- min(c(d$lower, d$estimate, 1), na.rm = TRUE); hi <- max(c(d$upper, d$estimate, 1), na.rm = TRUE)
-  brk <- c(0.25, 0.5, 1, 2, 4, 8, 16, 32); brk <- brk[brk >= lo / 2 & brk <= hi * 2]
+  brk <- 2^(-12:12); brk <- brk[brk >= lo / 2 & brk <= hi * 2]
+  if (length(brk) < 2) brk <- ggplot2::waiver()
   ggplot2::ggplot(d, ggplot2::aes(.data$estimate, .data$record, colour = .data$method, shape = .data$method)) +
     ggplot2::geom_vline(xintercept = 1, colour = rl_grey, linewidth = 0.7) +
     ggplot2::geom_errorbar(ggplot2::aes(xmin = .data$lower, xmax = .data$upper),

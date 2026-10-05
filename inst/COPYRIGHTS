@@ -1,0 +1,8 @@
+The code of recruitlag is released under the MIT licence (see LICENSE).
+
+The bundled census data (lepanthes_monthly, lepanthes_census, lepanthes_hosts,
+lepanthes_profile) are copyright Raymond L. Tremblay and are released under
+the Creative Commons Attribution 4.0 International licence (CC BY 4.0,
+https://creativecommons.org/licenses/by/4.0/), the same terms as the
+companion paper's data archive. The regimes and caladenia_dormancy tables
+are constructed or transcribed values and carry the package licence.

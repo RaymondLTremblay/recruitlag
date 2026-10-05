@@ -8,3 +8,4 @@ inst/doc
 .DS_Store
 *conflicted copy*
 *.tar.gz
+_to_delete/

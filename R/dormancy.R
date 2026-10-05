@@ -27,7 +27,15 @@ state_matrix <- function(x, plant = "plant", period = "period", state = "state")
     M[cbind(match(u[ok], plants), match(p[ok], periods))] <- as.character(x[[state]][ok])
     return(list(M = M, periods = periods))
   }
-  if (is.data.frame(x)) x <- as.matrix(x)
+  if (is.data.frame(x)) {
+    # A long data frame with one of the three names missing is a misnamed
+    # column, not a wide matrix; reading it as a matrix would turn the plant,
+    # period and state columns into three periods.
+    have <- c(plant, period, state) %in% names(x)
+    if (any(have))
+      rl_check_columns(x, c(plant = plant, period = period, state = state))
+    x <- as.matrix(x)
+  }
   if (!is.matrix(x))
     rl_abort("x must be a matrix with one row per plant and one column per period, or a long ",
              'data frame with columns "', plant, '", "', period, '" and "', state, '". It is ',
@@ -122,7 +130,18 @@ state_matrix <- function(x, plant = "plant", period = "period", state = "state")
 #' enlarged is search; a large excess after several settled years of
 #' watching is the nearest thing to a recruit count this kind of record can
 #' give. Returns of plants that arrived after period 1 are not modelled:
-#' those are new plants whenever they are first seen, only late.
+#' those are new plants whenever they are first seen, only late. The rates
+#' `s` and `r` are per period of the record: the `caladenia_dormancy` rates
+#' are annual, so they apply to an annual census and not to one made twice a
+#' year.
+#'
+#' **Improbable runs.** With `s` and `r` given, a run of `k` unseen periods
+#' between two sightings has probability `q^k` for a living plant. Runs long
+#' enough that `q^k` falls below 0.01 are reported in `dormancy` as
+#' `improbable_runs`, from the run length `improbable_from` on: more likely a
+#' tag reused for a new plant than one plant dormant that long. The 0.01 is
+#' a working convention of this package for which runs to point at, not a
+#' published cutoff, and the runs are counted whatever it is set to.
 #'
 #' **What this does not do.** It does not make a first-sighting series into
 #' a recruitment series. It says how far the two are apart, and where. A
@@ -162,6 +181,9 @@ recruit_triage <- function(x, plant = "plant", period = "period", state = "state
   H <- nrow(M); Tn <- ncol(M)
   if (Tn < 2) rl_abort("The record has ", Tn, " period(s); at least two are needed to see a first sighting.")
   if (!is.null(species)) {
+    if (!is.null(s) || !is.null(r))
+      rl_abort("Give either species = (rates taken from caladenia_dormancy) or s = and r = ",
+               "(your own rates), not both.")
     cd <- NULL; utils::data("caladenia_dormancy", package = "recruitlag", envir = environment())
     cd <- get("caladenia_dormancy", envir = environment())
     if (!species %in% cd$species)

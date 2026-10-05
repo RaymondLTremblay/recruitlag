@@ -28,9 +28,14 @@
 #' @return An object of class `lag_ceiling` with elements `obs` (the
 #'   concentration of `R`), `theorem` (the concentration of `X`, which is the
 #'   bound), `ceiling` (the largest Gini and CV any searched kernel produced
-#'   on the periods `t_R`), `exceedance` (observed over ceiling), `best` (the
-#'   kernel attaining the ceiling), `search` (a data frame with one row per
-#'   kernel) and the inputs.
+#'   on the periods `t_R`), `exceedance` (observed over ceiling; `NA` when the
+#'   reproductive record is flat, since the ceiling is then 0 and the ratio
+#'   undefined, with `flat = TRUE`), `best` (the kernel attaining the
+#'   ceiling), `search` (a data frame with one row per kernel) and the inputs.
+#'   With `missing = "drop"`, scored periods whose lag window reaches before
+#'   the record are left out of `R` and `t_R`, so that the observed and the
+#'   expected series are compared on the same periods; `n_dropped` counts
+#'   them.
 #'
 #' @details The searched ceiling can differ from the theorem bound by a small
 #'   amount in either direction, because the kernels are scored on the
@@ -124,27 +129,49 @@ lag_ceiling <- function(X, R = NULL, t_R = NULL, K, lag0 = 1L,
              rl_list(sort(t_R[t_R < 1 | t_R > length(X)])),
              ". X has ", length(X), " periods, so t_R must lie between 1 and ", length(X), ".")
   rl_check_kernels(kernels, K)
+  rl_check_whole(lag0, "lag0", 0)
+  # With missing = "drop", a scored period whose window reaches before the
+  # record has no expected value. Those periods are left out of the observed
+  # series as well, so that the observed and the expected concentration are
+  # measured on the same periods.
+  n_dropped <- 0L
+  if (missing == "drop") {
+    keep <- (t_R - lag0 - K) >= 1L
+    n_dropped <- sum(!keep)
+    if (!any(keep))
+      rl_abort("With missing = \"drop\", no scored period has a window lying inside the ",
+               "record: the first such period is ", lag0 + K + 1L, " and recruits were scored at ",
+               rl_list(t_R), ". Use missing = \"backfill\", or a shorter horizon.")
+    R <- R[keep]; t_R <- t_R[keep]
+  }
   res <- vapply(kernels, function(k) {
     o <- convolve_lag(X, k$w, t_R, lag0, missing)
-    o <- o[!is.na(o)]
     c(rain_gini(o), rain_cv(o))
   }, numeric(2))
   search <- tibble::tibble(label = vapply(kernels, function(k) k$label, character(1)),
                            family = vapply(kernels, function(k) k$family, character(1)),
                            gini = res[1, ], cv = res[2, ])
   if (all(is.na(search$gini)))
-    stop("every kernel gives an all-zero expected series: the reproductive record is ",
-         "zero at every lagged period used. There is no ceiling to compute for this unit.")
+    rl_abort("every kernel gives an all-zero expected series: the reproductive record is ",
+             "zero at every lagged period used. There is no ceiling to compute for this unit.",
+             class = "recruitlag_zero_lagged")
   ib <- which.max(search$gini)
+  ceiling <- c(gini = max(search$gini, na.rm = TRUE), cv = max(search$cv, na.rm = TRUE))
+  obs <- c(gini = rain_gini(R), cv = rain_cv(R))
+  # A flat reproductive record has a ceiling of 0 on both indices, and the
+  # exceedance, a ratio, is then undefined rather than large. The comparison
+  # uses a tolerance because a constant series reaches 0 only up to rounding.
+  flat <- is.finite(ceiling[["gini"]]) && ceiling[["gini"]] < sqrt(.Machine$double.eps)
+  exceedance <- if (flat) c(gini = NA_real_, cv = NA_real_) else obs / ceiling
   structure(list(
-    obs = c(gini = rain_gini(R), cv = rain_cv(R)),
+    obs = obs,
     theorem = c(gini = rain_gini(X), cv = rain_cv(X)),
-    ceiling = c(gini = max(search$gini, na.rm = TRUE), cv = max(search$cv, na.rm = TRUE)),
-    exceedance = c(gini = rain_gini(R) / max(search$gini, na.rm = TRUE),
-                   cv = rain_cv(R) / max(search$cv, na.rm = TRUE)),
+    ceiling = ceiling,
+    exceedance = exceedance,
+    flat = flat,
     best = list(label = search$label[ib], family = search$family[ib], w = kernels[[ib]]$w),
     search = search,
-    X = X, R = R, t_R = t_R, K = K, lag0 = lag0, missing = missing
+    X = X, R = R, t_R = t_R, K = K, lag0 = lag0, missing = missing, n_dropped = n_dropped
   ), class = "lag_ceiling")
 }
 
@@ -158,9 +185,15 @@ print.lag_ceiling <- function(x, digits = 3, ...) {
   cat(sprintf("  %-28s Gini %s   CV %s   (%s, %d kernels)\n", "searched ceiling",
               f(x$ceiling["gini"]), f(x$ceiling["cv"]), x$best$label, nrow(x$search)))
   cat(sprintf("  %-28s Gini %s   CV %s\n", "observed recruitment", f(x$obs["gini"]), f(x$obs["cv"])))
-  cat(sprintf("  %-28s Gini %s   CV %s\n", "exceedance (obs / ceiling)",
-              formatC(x$exceedance["gini"], digits = 2, format = "f"),
-              formatC(x$exceedance["cv"], digits = 2, format = "f")))
+  if (isTRUE(x$flat))
+    cat("  exceedance (obs / ceiling)   undefined: the reproductive record is flat, so the ceiling is 0\n")
+  else
+    cat(sprintf("  %-28s Gini %s   CV %s\n", "exceedance (obs / ceiling)",
+                formatC(x$exceedance["gini"], digits = 2, format = "f"),
+                formatC(x$exceedance["cv"], digits = 2, format = "f")))
+  if (isTRUE(x$n_dropped > 0))
+    cat(sprintf("  %d scored period(s) left out: their lag window reaches before the record (missing = \"drop\")\n",
+                x$n_dropped))
   cat("  The exceedance bounds the expected series, not the counts; see ceiling_calibration() and host_lag_test().\n")
   invisible(x)
 }

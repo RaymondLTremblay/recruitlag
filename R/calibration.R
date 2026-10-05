@@ -82,9 +82,17 @@
 ceiling_calibration <- function(x, vmr = NULL, nsim = 20000L) {
   rl_check_class(x, "lag_ceiling", "x", "lag_ceiling()")
   R <- x$R; n <- length(R); mu <- mean(R)
-  check_counts(R, "recruits", "recruit",
-               "ceiling_calibration() simulates counts about the expected series, so the recruits must be whole numbers.")
+  rl_check_counts(R, NULL, "recruit",
+                  "ceiling_calibration() simulates counts about the expected series, so the recruits must be whole numbers.")
+  if (sum(R) == 0)
+    rl_abort("Every recruit count is zero, so there is no observed concentration to calibrate.")
+  if (n < 2)
+    rl_abort("Recruits were scored at ", n, " period; at least two are needed for a ",
+             "variance-to-mean ratio.")
   if (is.null(vmr)) vmr <- stats::var(R) / mu
+  if (!is.numeric(vmr) || length(vmr) != 1 || is.na(vmr))
+    rl_abort("vmr must be a single number, the variance-to-mean ratio of the counts. It was ",
+             "given as ", paste(format(vmr), collapse = ", "), ".")
   if (vmr <= 1)
     rl_abort("The recruit counts have a variance-to-mean ratio of ", signif(vmr, 3),
              ", which is at or below 1, so they are not overdispersed and the ",

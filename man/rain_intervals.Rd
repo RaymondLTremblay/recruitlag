@@ -33,10 +33,12 @@ is what decides whether that column was well observed.}
 
 \item{tolerance}{An interval is called irregular when it differs from the
 median interval by more than this fraction of the median. The default 0.2
-allows a visit a fortnight early in a six-monthly schedule.}
+allows a visit a fortnight early in a six-monthly schedule. It is a
+working convention of this package, not a published cutoff, and it
+decides only which intervals are flagged in the report.}
 }
 \value{
-An object of class \code{rain_intervals}, invisibly a data frame with one
+An object of class \code{rain_intervals}, a data frame with one
 row per interval: the two periods, the two dates, the gap, the ratio to
 the median gap, and, when \code{persistence} is given, the persistence to
 interval ratio. \code{print()} gives the report.
@@ -59,8 +61,9 @@ schedule, and always on a record you did not collect yourself.
 Three numbers matter, and each answers a different question.
 
 \strong{The ratio to the median interval} says whether the period index is
-honest. At 1 the visit fell where the schedule says. Intervals below about
-0.8 or above about 1.25 mean the period index is not a time axis, and both
+honest. At 1 the visit fell where the schedule says. Intervals that differ
+from the median by more than \code{tolerance} (one fifth of the median by
+default) are flagged: the period index is then not a time axis, and both
 the reproduction and the recruit series are then partly a record of how long
 the crew waited rather than of what the plants did. A short interval catches
 fewer recruits and fewer fruits than a long one for reasons that have

@@ -1,5 +1,5 @@
 ---
-title: "The Lepanthes eltoroensis analysis"
+title: "The *Lepanthes eltoroensis* analysis"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{The Lepanthes eltoroensis analysis}
@@ -8,7 +8,8 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.5)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.5,
+                      eval = requireNamespace("dplyr", quietly = TRUE))
 ```
 
 ```{r, message = FALSE}
@@ -41,8 +42,10 @@ of the host-level test.
 The lag conventions differ, and the package makes them explicit. The
 monthly lag model of the paper reads lag *k* at month *t - k* over a
 six-month horizon (`K = 6`, `lag0 = 0`). The six-monthly model reads lag
-*k* at census *t - 1 - k* over five bins spanning 6 to 30 months
-(`K = 4`, `lag0 = 1`).
+*k* at census *t - 1 - k* over five six-month bins (`K = 4`, `lag0 = 1`).
+The bins are labelled 0-6, 6-12, 12-18, 18-24 and 24-30 months, counted
+from the first lagged census, which is the convention of the kernel labels
+throughout.
 
 ## Concentration and the ceiling
 
@@ -58,8 +61,9 @@ c_6
 At both time scales the ceiling is low because the input is flat, the
 searched maximum is attained by a pure delay and lies within 0.01 of the
 theorem bound (the small difference arises from backfilling pre-record
-lags), and observed recruitment exceeds the ceiling by a factor of about 10
-(monthly) and 2.5 (six-monthly).
+lags), and observed recruitment exceeds the ceiling by a factor of about
+`r round(c_m$exceedance["gini"])` (monthly) and
+`r round(c_6$exceedance["gini"], 1)` (six-monthly) on the Gini.
 
 ```{r}
 rain_strip(`monthly 1994` = c_m, `six-monthly 1999-2004` = c_6)
@@ -70,8 +74,8 @@ rain_strip(`monthly 1994` = c_m, `six-monthly 1999-2004` = c_6)
 ```{r}
 profiles <- list(
   `one interval only (projection-matrix null)` = c(1, 0, 0, 0, 0),
-  `concentrated early (6 to 12 months)` = c(.7, .2, .07, .03, 0),
-  `evenly spread (6 to 30 months)` = rep(.2, 5),
+  `concentrated early (0 to 6 months)` = c(.7, .2, .07, .03, 0),
+  `evenly spread (0 to 30 months)` = rep(.2, 5),
   `concentrated late (24 to 30 months)` = c(0, .03, .07, .2, .7),
   `fitted posterior mean` = lepanthes_profile$weight)
 rain_profiles(profiles, bin = 6, unit = "months")
@@ -135,12 +139,14 @@ lag_ceiling_stan(lepanthes_hosts, unit = "host", reproduction = "inflorescences"
 
 ```{r}
 set.seed(20260903)
-ceiling_calibration(c_6)
+cal <- ceiling_calibration(c_6)
+cal
 ```
 
 About a mean that obeys the ceiling, negative-binomial counts with the
 observed variance-to-mean ratio produce a series as concentrated as the
-observed one roughly one time in five. The exceedance of the ceiling by the
+observed one roughly one time in
+`r round(1 / cal$p_gini[cal$null == "N1 best-kernel mean"])`. The exceedance of the ceiling by the
 pooled counts is therefore not evidence; the test has to be made across
 host trees.
 
@@ -170,7 +176,9 @@ ht <- host_lag_test(lepanthes_hosts, unit = "host", reproduction = "inflorescenc
 ht
 ```
 
-The moment estimate of the clumping parameter is about 0.19; the paper also
+The moment estimate of the clumping parameter under the flat reference is
+about `r signif(ht$table$phi[ht$table$family == "flat" & ht$table$phi_source == "moment"], 2)`;
+the paper also
 evaluates every profile at 0.089, the estimate obtained about a single
 pooled mean, which attributes the between-host spread of the means to
 clumping and is about twice the clumping the counts support. Even at that
@@ -192,6 +200,6 @@ ht$table |>
   select(label, phi, gini_expected, p_silent, p_gini, p_cv)
 ```
 
-No lag profile, of any shape over 6 to 30 months, makes the observed record
+No lag profile, of any shape over the 30-month window, makes the observed record
 ordinary. Recruitment in this population is not the delayed consequence of
 its own reproduction; something else opens and closes.

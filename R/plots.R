@@ -223,8 +223,9 @@ as_profile_list <- function(profiles) {
 #' that. Points sitting on the floor mean "smaller than
 #' \eqn{1/\mathrm{nsim}}{1/nsim}", not zero. Two horizontal lines are drawn: the
 #' dashed line is the flat reference, which is the comparison that matters,
-#' and the dotted line at 0.05 is a conventional reference mark and not a
-#' decision rule (Wasserstein and Lazar 2016). Read the plot as the spread of
+#' and the dotted line at 0.05 is a reference mark for the eye, the level a
+#' reader will look for, and not a decision rule (Wasserstein and Lazar
+#' 2016); nothing in the package tests against it. Read the plot as the spread of
 #' the whole kernel family, since the verdict is the highest point on it.
 #'
 #' For a `ceiling_calibration` the axis is the Gini of simulated count
@@ -337,7 +338,9 @@ rain_units <- function(x, index = c("gini", "cv"), label = NULL) {
                observed = unname(o$obs[index]), n = length(o$R),
                stringsAsFactors = FALSE)
   }))
-  above <- sum(d$observed > d$ceiling)
+  # A unit with no recruits has an NA observed index and cannot be placed.
+  above <- sum(d$observed > d$ceiling, na.rm = TRUE)
+  n_placed <- sum(!is.na(d$observed) & !is.na(d$ceiling))
   lim <- c(0, max(d$ceiling, d$observed, na.rm = TRUE) * 1.05)
   d$lab <- ifelse(d$unit %in% label, d$unit, NA_character_)
   ggplot2::ggplot(d, ggplot2::aes(.data$ceiling, .data$observed)) +
@@ -354,8 +357,8 @@ rain_units <- function(x, index = c("gini", "cv"), label = NULL) {
       x = sprintf("this unit's ceiling (%s of its own reproduction)",
                   if (index == "gini") "Gini" else "CV"),
       y = sprintf("observed recruitment (%s)", if (index == "gini") "Gini" else "CV"),
-      subtitle = sprintf("One point per unit. The shaded region is unreachable by any delay.\n%d of the %d units are in it.",
-                         above, nrow(d))) +
+      subtitle = sprintf("One point per unit. The shaded region is unreachable by any delay.\n%d of the %d units with recruits are in it.",
+                         above, n_placed)) +
     rl_theme()
 }
 
@@ -419,7 +422,8 @@ rain_strips <- function(x, group = NULL, size = 10,
     ceiling    = vapply(x, function(o) unname(o$theorem[index]), numeric(1)),
     observed   = vapply(x, function(o) unname(o$obs[index]), numeric(1)),
     name       = seq_along(x))
-  if (order_by != "name") key[!is.finite(key)] <- max(key[is.finite(key)], na.rm = TRUE) + 1
+  if (order_by != "name")
+    key[!is.finite(key)] <- if (any(is.finite(key))) max(key[is.finite(key)]) + 1 else 1
 
   out <- list()
   for (grp in unique(g)) {

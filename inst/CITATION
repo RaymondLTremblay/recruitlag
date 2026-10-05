@@ -5,11 +5,11 @@ bibentry(
   title   = "recruitlag: Can Episodic Recruitment Be a Delayed Consequence of Continuous Reproduction?",
   author  = person("Raymond L.", "Tremblay"),
   year    = "2026",
-  note    = "R package version 0.1.0",
+  note    = paste("R package version", meta$Version),
   url     = "https://github.com/RaymondLTremblay/recruitlag",
   textVersion = paste(
     "Tremblay, R. L. (2026). recruitlag: Can Episodic Recruitment Be a Delayed",
-    "Consequence of Continuous Reproduction? R package version 0.1.0.",
+    paste0("Consequence of Continuous Reproduction? R package version ", meta$Version, "."),
     "https://github.com/RaymondLTremblay/recruitlag")
 )
 

@@ -32,13 +32,14 @@ units are compared on the same family.}
 
 \item{missing}{Treatment of pre-record lags (see \code{\link[=convolve_lag]{convolve_lag()}}).}
 
-\item{min_periods}{Units with fewer scored periods than this are skipped.
-The default \code{K + 3} is the shortest record on which a horizon of \code{K + 1}
-bins leaves anything to compare.}
+\item{min_periods}{Units with fewer scored periods (periods at which
+recruits were counted) than this are skipped. The default \code{K + 3} is the
+shortest record on which a horizon of \code{K + 1} bins leaves anything to
+compare.}
 
 \item{min_recruits}{Units with fewer recruits than this are skipped, since
-a unit with one recruit has concentration 1 by arithmetic rather than by
-biology.}
+a unit with one recruit has the maximum concentration, \eqn{(n-1)/n}, by
+arithmetic rather than by biology.}
 }
 \value{
 A named list of \code{lag_ceiling} objects, of class
@@ -69,9 +70,11 @@ them.
 
 
 The columns of \code{as.data.frame()} carry the scales of \code{\link[=lag_ceiling]{lag_ceiling()}}:
-\code{ceiling} and \code{observed} are concentration indices bounded above by
-\eqn{(n-1)/n} for the Gini, where \code{n} is that unit's own number of scored
-periods, and \code{exceedance} is their ratio, centred on 1.
+\code{ceiling_gini} and \code{observed_gini} are concentration indices bounded above
+by \eqn{(n-1)/n}, where \code{n} is that unit's own number of scored periods,
+and \code{exceedance_gini} and \code{exceedance_cv} are the ratios, centred on 1.
+A unit whose reproductive record is flat has no ceiling to exceed, and its
+exceedance is \code{NA} with the reason in \code{best_kernel}.
 
 Because \code{n} differs between units, two cautions apply to reading the table
 or the figure down a column. A unit with few periods has a lower attainable

@@ -1,11 +1,11 @@
 Package: recruitlag
 Type: Package
-Title: Can Episodic Recruitment Be a Delayed Consequence of Continuous
+Title: Can Episodic Recruitment be a Delayed Consequence of Continuous
     Reproduction?
 Version: 0.1.0
 Authors@R:
     person("Raymond L.", "Tremblay", email = "raymond.tremblay@gmail.com",
-           role = c("aut", "cre"),
+           role = c("aut", "cre", "cph"),
            comment = c(ORCID = "0000-0002-8588-4372"))
 Description: Tests whether an episodic recruitment record can be the delayed
     consequence of a reproductive record, under any distributed lag. A delay
@@ -18,10 +18,15 @@ Description: Tests whether an episodic recruitment record can be the delayed
     cannot refute, and runs the host-level (replicate-unit) test in which the
     null is the lag hypothesis exactly as it is asserted: expected
     recruitment on each unit is that unit's own lagged reproduction, scaled to
-    its own total. Plotting functions draw the ceiling strip, the lag profiles
-    against the observed counts, and the calibration. The census data on the
-    epiphytic orchid Lepanthes eltoroensis analysed in the companion paper are
-    included.
+    its own total. Uncertainty on the exceedance comes by three routes, a
+    cluster bootstrap over units, a Bayesian bootstrap (Rubin 1981
+    <doi:10.1214/aos/1176345338>) and a negative-binomial model of the counts
+    fitted with 'Stan' through 'cmdstanr'; recruit_triage() asks whether a
+    first sighting is a recruit or a plant returning from dormancy. Plotting
+    functions draw the ceiling strip, the lag profiles against the observed
+    counts, the calibration and a forest plot of the intervals. The census
+    data on the epiphytic orchid Lepanthes eltoroensis analysed in the
+    companion paper are included.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Language: en-GB
@@ -32,7 +37,9 @@ Imports:
     ggplot2,
     rlang,
     stats,
-    tibble
+    tibble,
+    tools,
+    utils
 VignetteBuilder: knitr
 Suggests:
     testthat (>= 3.0.0),
@@ -45,6 +52,7 @@ Suggests:
 Additional_repositories: https://stan-dev.r-universe.dev
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
-URL: https://github.com/raymondltremblay/recruitlag
-BugReports: https://github.com/raymondltremblay/recruitlag/issues
+URL: https://github.com/RaymondLTremblay/recruitlag
+BugReports: https://github.com/RaymondLTremblay/recruitlag/issues
 Config/roxygen2/version: 8.1.0
+RoxygenNote: 7.3.1

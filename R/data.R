@@ -4,6 +4,14 @@
 #' which reproduction is continuous in time and recruitment is episodic.
 #' Luquillo Mountains, Puerto Rico.
 #'
+#' @format Four tibbles. `lepanthes_monthly`: 23 rows, columns `period`,
+#'   `reproductive_adults`, `recruits`. `lepanthes_census`: 12 rows, columns
+#'   `period`, `census`, `years_since_georges`, `adults`, `juveniles`,
+#'   `seedlings`, `inflorescences`, `flowers`, `fruits`, `recruits`.
+#'   `lepanthes_hosts`: 276 rows, columns `host`, `period`, `adults`,
+#'   `inflorescences`, `recruits`. `lepanthes_profile`: 5 rows, columns
+#'   `bin`, `months`, `weight`. Each is described below.
+#'
 #' @details
 #' `lepanthes_monthly` (23 rows): the monthly survey of four populations on
 #' the El Toro trail, September 1994 to November 1996. `period` is the census
@@ -40,6 +48,7 @@
 #' @examples
 #' lepanthes_census
 #' head(lepanthes_hosts)
+#' @docType data
 #' @name lepanthes
 #' @aliases lepanthes_monthly lepanthes_census lepanthes_hosts lepanthes_profile
 NULL
@@ -56,7 +65,8 @@ NULL
 #' proportional to each unit's average reproduction, so the record is
 #' episodic and does not track reproduction. Each record has 20 units and 24
 #' periods; recruits are scored at periods 6 to 24 (`K = 4`, `lag0 = 1`) and
-#' are `NA` elsewhere. The generating script is `data-raw/regimes.R`.
+#' are `NA` elsewhere. The generating script is `data-raw/regimes.R` in the
+#' source repository (<https://github.com/RaymondLTremblay/recruitlag>).
 #'
 #' @format `regimes` has one row per record, unit and period (2,880 rows):
 #'   `record` (`seasonal_delayed`, `seasonal_gated`, `intermediate_delayed`,
@@ -65,10 +75,10 @@ NULL
 #'   `reproduction` and `recruits`. `regimes_truth` holds the generating
 #'   rules: the five weights of the true lag profile and the 24 gate values.
 #' @examples
-#' library(dplyr, warn.conflicts = FALSE)
-#' r <- filter(regimes, record == "aseasonal_gated")
+#' r <- regimes[regimes$record == "aseasonal_gated", ]
 #' ce <- lag_ceiling(r, K = 4, kernels = lag_kernels(4))
 #' ce
+#' @docType data
 #' @name regimes
 #' @aliases regimes_truth
 NULL

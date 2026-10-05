@@ -104,7 +104,18 @@ can have contributed. A large excess in a period in which the plot was
 enlarged is search; a large excess after several settled years of
 watching is the nearest thing to a recruit count this kind of record can
 give. Returns of plants that arrived after period 1 are not modelled:
-those are new plants whenever they are first seen, only late.
+those are new plants whenever they are first seen, only late. The rates
+\code{s} and \code{r} are per period of the record: the \code{caladenia_dormancy} rates
+are annual, so they apply to an annual census and not to one made twice a
+year.
+
+\strong{Improbable runs.} With \code{s} and \code{r} given, a run of \code{k} unseen periods
+between two sightings has probability \code{q^k} for a living plant. Runs long
+enough that \code{q^k} falls below 0.01 are reported in \code{dormancy} as
+\code{improbable_runs}, from the run length \code{improbable_from} on: more likely a
+tag reused for a new plant than one plant dormant that long. The 0.01 is
+a working convention of this package for which runs to point at, not a
+published cutoff, and the runs are counted whatever it is set to.
 
 \strong{What this does not do.} It does not make a first-sighting series into
 a recruitment series. It says how far the two are apart, and where. A

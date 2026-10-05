@@ -102,7 +102,9 @@ rain_gini <- function(x) {
   x <- sort(as.numeric(x[!is.na(x)]))
   n <- length(x); s <- sum(x)
   if (n == 0 || s == 0) return(NA_real_)
-  2 * sum(seq_len(n) * x) / (n * s) - (n + 1) / n
+  # A constant series gives exactly 0 in arithmetic and a value of either sign
+  # within rounding error in floating point; the index cannot be negative.
+  max(0, 2 * sum(seq_len(n) * x) / (n * s) - (n + 1) / n)
 }
 
 #' @rdname rain_gini

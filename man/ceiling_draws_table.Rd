@@ -54,5 +54,5 @@ b  <- lag_ceiling_boot(lepanthes_hosts, unit = "host", reproduction = "infloresc
                        K = 4, kernels = k, R = 200)
 bb <- lag_ceiling_bayesboot(lepanthes_hosts, unit = "host", reproduction = "inflorescences",
                             K = 4, kernels = k, draws = 200)
-ceiling_draws_table(`L. eltoroensis` = b, `L. eltoroensis` = bb)
+ceiling_draws_table(`23 host trees` = b, `23 host trees` = bb)
 }

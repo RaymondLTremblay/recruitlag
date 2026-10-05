@@ -67,6 +67,10 @@ expected_recruits <- function(R, X = NULL, w, lag0 = 1L, missing = c("backfill",
   missing <- match.arg(missing)
   if (is.data.frame(R)) { hm <- host_matrices(R, unit, period, reproduction, recruits); R <- hm$R; X <- hm$X }
   chk <- check_host_inputs(R, X)
+  # check_host_inputs() reorders X to the rows of R; use that copy, not the
+  # original, or units are paired by position and not by name.
+  X <- chk$X
+  rl_check_weights(w, "w")
   cens <- chk$cens; K <- length(w) - 1L; w <- as.numeric(w) / sum(w)
   S <- matrix(0, nrow(R), ncol(R), dimnames = dimnames(R))
   for (j in seq_along(cens)) {
@@ -191,6 +195,9 @@ check_host_inputs <- function(R, X) {
 #' @export
 phi_moment <- function(R, mu, cap = 1e6) {
   keep <- rowSums(R) > 0
+  if (!any(keep))
+    rl_abort("No unit has any recruits, so there is no clumping to estimate: every row of R ",
+             "sums to zero. Check the recruits column, or whether the scored periods were read.")
   r2 <- mean((R[keep, ] - mu[keep, ])^2); mb <- mean(mu[keep, ]); m2 <- mean(mu[keep, ]^2)
   if (r2 <= mb) return(cap)
   min(m2 / (r2 - mb), cap)
@@ -252,8 +259,8 @@ phi_moment <- function(R, mu, cap = 1e6) {
 #' at \eqn{1/\mathrm{nsim}}{1/nsim} for the same reason.
 #'
 #' **The verdict is a maximum, not an average.** `verdict` takes, for each
-#' statistic, the largest probability over every profile and every `phi`
-#' setting, together with the profile attaining it. It is therefore the best
+#' statistic and each `phi` setting separately, the largest probability over
+#' every profile, together with the profile attaining it. It is therefore the best
 #' case the lag hypothesis can make for itself over the whole family
 #' searched. A small verdict says that no profile in the family, not merely
 #' the fitted one, reproduces the record.
@@ -296,10 +303,13 @@ host_lag_test <- function(R, X = NULL, K, lag0 = 1L,
   missing <- match.arg(missing)
   if (is.data.frame(R)) { hm <- host_matrices(R, unit, period, reproduction, recruits); R <- hm$R; X <- hm$X }
   chk <- check_host_inputs(R, X); X <- chk$X
-  check_counts(R, recruits, "recruit",
+  rl_check_counts(R, recruits, "recruit",
                "host_lag_test() simulates recruit counts under the null, so the recruits must be whole numbers.")
   rl_check_kernels(kernels, K)
   Tn <- ncol(R); tot <- colSums(R)
+  if (sum(tot) == 0)
+    rl_abort('Every recruit count in "', recruits, '" is zero, so there is no recruitment ',
+             "record to test against the lag hypothesis.")
   obs <- c(silent = sum(tot == 0), gini = rain_gini(tot), cv = rain_cv(tot), max = max(tot))
   sim_stats <- function(mu, ph) {
     M <- matrix(0L, nsim, Tn)
@@ -316,6 +326,9 @@ host_lag_test <- function(R, X = NULL, K, lag0 = 1L,
     if (!is.numeric(phi))
       rl_abort('`phi` must be "moment", or a numeric vector of fixed clumping values to ',
                "evaluate as a stress test. It is ", class(phi)[1], ".")
+    if (anyNA(phi) || any(phi <= 0))
+      rl_abort("Fixed clumping values in `phi` must be positive numbers (the negative-binomial ",
+               "size parameter). Given: ", rl_list(format(phi)), ".")
     c(list(moment = NA), stats::setNames(as.list(phi), paste0("fixed ", phi))) }
   one <- function(label, family, mu) {
     ph_m <- phi_moment(R, mu)

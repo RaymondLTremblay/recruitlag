@@ -8,7 +8,9 @@
 #' @param w Numeric vector of `K + 1` non-negative lag weights (they are
 #'   renormalised to sum to one).
 #' @param t_R Integer vector: the periods (indices into `X`) at which recruits
-#'   are scored. Defaults to the last `length(X) - lag0 - K` periods.
+#'   are scored. Defaults to the last `length(X) - lag0 - K` periods, that is,
+#'   every period whose whole window lies inside the record; an error is
+#'   raised if there is none.
 #' @param lag0 Offset of the first bin. With `lag0 = 1` (the default, and the
 #'   convention of a projection matrix) weight `k + 1` is applied to
 #'   `X[t - 1 - k]`, so the first bin is the period preceding the recruit
@@ -59,18 +61,25 @@ convolve_lag <- function(X, w, t_R = NULL, lag0 = 1L, missing = c("backfill", "d
   if (!is.numeric(X) || !length(X))
     rl_abort("X must be a non-empty numeric vector: the reproductive record at periods ",
              "1, 2, ... It is ", class(X)[1], " of length ", length(X), ".")
-  if (!is.numeric(w) || !length(w))
-    rl_abort("w must be a numeric vector of lag weights, one per bin. It is ",
-             class(w)[1], " of length ", length(w), ".")
-  if (anyNA(w) || any(w < 0))
-    rl_abort("The lag weights w must all be non-negative and present. ",
-             "Given: ", rl_list(format(w)), ".")
-  if (sum(w) == 0)
-    rl_abort("The lag weights w sum to zero, so there is no profile to apply. ",
-             "At least one bin must carry weight.")
+  rl_check_weights(w, "w")
+  rl_check_whole(lag0, "lag0", 0)
   X <- as.numeric(X); w <- as.numeric(w); w <- w / sum(w)
   K <- length(w) - 1L
-  if (is.null(t_R)) t_R <- seq.int(lag0 + K + 1L, length(X))
+  if (is.null(t_R)) {
+    if (length(X) < lag0 + K + 1L)
+      rl_abort("X has ", length(X), " periods, but with lag0 = ", lag0, " and ", K + 1,
+               " bins the first period whose window lies inside the record is period ",
+               lag0 + K + 1L, ". There is no period to compute. Shorten the profile, ",
+               "lower lag0, or pass t_R and missing = \"backfill\" explicitly.")
+    t_R <- seq.int(lag0 + K + 1L, length(X))
+  }
+  if (!is.numeric(t_R) || anyNA(t_R) || any(t_R != round(t_R)))
+    rl_abort("t_R must be whole numbers: the periods of X at which recruits were scored. ",
+             "Given: ", rl_list(format(t_R)), ".")
+  if (any(t_R < 1) || any(t_R > length(X)))
+    rl_abort("t_R contains period(s) outside the reproductive record: ",
+             rl_list(sort(t_R[t_R < 1 | t_R > length(X)])),
+             ". X has ", length(X), " periods, so t_R must lie between 1 and ", length(X), ".")
   vapply(t_R, function(t) {
     src <- t - lag0 - (0:K)
     if (missing == "backfill") sum(w * X[pmax(src, 1L)])

@@ -22,7 +22,9 @@ count and the recruit count.}
 \value{
 A list with \code{R} (recruits, units by scored periods, \code{colnames} the
 period indices) and \code{X} (reproduction, units by periods 1 to the last
-period in \code{data}). Missing reproduction is treated as zero.
+period in \code{data}). Missing reproduction is treated as zero. A unit with
+\code{NA} recruits at a period that was scored for other units is treated as
+having zero recruits there, with a warning.
 }
 \description{
 The host-level functions work on two matrices, recruits (units by scored

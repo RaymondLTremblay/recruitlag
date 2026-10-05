@@ -10,3 +10,13 @@
 ^README\.md$
 ^.*\.tar\.gz$
 ^RELEASE_PLAN\.md$
+^REVIEW\.md$
+^cran-comments\.md$
+^CRAN-SUBMISSION$
+^\.zenodo\.json$
+^CITATION\.cff$
+^_pkgdown\.yml$
+^docs$
+^\.DS_Store$
+
+^_to_delete$

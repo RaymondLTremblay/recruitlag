@@ -13,7 +13,9 @@ convolve_lag(X, w, t_R = NULL, lag0 = 1L, missing = c("backfill", "drop"))
 renormalised to sum to one).}
 
 \item{t_R}{Integer vector: the periods (indices into \code{X}) at which recruits
-are scored. Defaults to the last \code{length(X) - lag0 - K} periods.}
+are scored. Defaults to the last \code{length(X) - lag0 - K} periods, that is,
+every period whose whole window lies inside the record; an error is
+raised if there is none.}
 
 \item{lag0}{Offset of the first bin. With \code{lag0 = 1} (the default, and the
 convention of a projection matrix) weight \code{k + 1} is applied to

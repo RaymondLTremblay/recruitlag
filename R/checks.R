@@ -3,7 +3,12 @@
 # All of them use call. = FALSE, so the reader gets a sentence rather than
 # "Error in series_from(X, period, reproduction, recruits) :".
 
-rl_abort <- function(...) stop(paste0(...), call. = FALSE)
+# `class` adds a condition class, so that a caller can recognise one error by
+# inherits() instead of by matching its wording.
+rl_abort <- function(..., class = NULL) {
+  stop(structure(class = c(class, "error", "condition"),
+                 list(message = paste0(...), call = NULL)))
+}
 rl_warn  <- function(...) warning(paste0(...), call. = FALSE)
 
 # A compact list for a message: "3, 7, 11 and 4 more".
@@ -146,5 +151,67 @@ rl_check_class <- function(x, cls, arg, made_by) {
   if (!inherits(x, cls))
     rl_abort("`", arg, "` must be ", if (grepl("^[aeiou]", cls)) "an " else "a ", cls,
              " object, as returned by ", made_by, ". It is ", class(x)[1], ".")
+  invisible(TRUE)
+}
+
+# Lag weights: one per bin, non-negative, present, not all zero. Used by every
+# function that applies a profile, so that they all refuse the same inputs.
+rl_check_weights <- function(w, arg = "w") {
+  if (!is.numeric(w) || !length(w))
+    rl_abort("`", arg, "` must be a numeric vector of lag weights, one per bin. It is ",
+             class(w)[1], " of length ", length(w), ".")
+  if (anyNA(w) || any(w < 0))
+    rl_abort("The lag weights `", arg, "` must all be non-negative and present. ",
+             "Given: ", rl_list(format(w)), ".")
+  if (sum(w) == 0)
+    rl_abort("The lag weights `", arg, "` sum to zero, so there is no profile to apply. ",
+             "At least one bin must carry weight.")
+  invisible(TRUE)
+}
+
+# A whole-number argument (a period offset, a horizon, a number of replicates).
+rl_check_whole <- function(x, arg, min = 0) {
+  if (!is.numeric(x) || length(x) != 1 || is.na(x) || x != round(x) || x < min)
+    rl_abort("`", arg, "` must be a single whole number of ", min, " or more. It was given as ",
+             paste(format(x), collapse = ", "), ".")
+  invisible(TRUE)
+}
+
+# The negative binomial is a distribution for counts: whole, non-negative. Used by every
+# function that simulates or models counts; `why` names the caller's reason.
+rl_check_counts <- function(M, column, role,
+                            why = paste0("lag_ceiling_stan() fits a negative-binomial model, which is a ",
+                                         "distribution for counts, so the recruits must be whole numbers.")) {
+  v <- M[!is.na(M)]
+  bad <- v[v != round(v)]
+  what <- if (is.null(column)) paste0("The ", role, " series") else paste0('The ', role, ' column "', column, '"')
+  if (length(bad))
+    rl_abort(what, " has non-whole values (",
+             rl_list(format(utils::head(sort(unique(bad)), 4))), "). ", why,
+             " If this column is a rate, a biomass or a model estimate, pass the count it was ",
+             "made from instead; lag_ceiling() and the two bootstrap functions accept any ",
+             "non-negative series, because the concentration indices are scale-free.")
+  invisible(TRUE)
+}
+
+rl_check_level <- function(level) {
+  if (!is.numeric(level) || length(level) != 1 || is.na(level) || level <= 0 || level >= 1)
+    rl_abort("level must be a single number strictly between 0 and 1, the coverage of the ",
+             "interval (for example 0.9). It was given as ", paste(format(level), collapse = ", "), ".")
+  invisible(TRUE)
+}
+
+# cmdstanr and CmdStan, or a message saying how to get them.
+rl_need_cmdstan <- function() {
+  if (!requireNamespace("cmdstanr", quietly = TRUE))
+    rl_abort("lag_ceiling_stan() needs the cmdstanr package, which is not on CRAN. Install it with\n",
+             '  install.packages("cmdstanr", repos = c("https://stan-dev.r-universe.dev", getOption("repos")))\n',
+             "and then CmdStan itself with cmdstanr::install_cmdstan(). The two bootstrap ",
+             "functions, lag_ceiling_boot() and lag_ceiling_bayesboot(), need neither.")
+  v <- tryCatch(cmdstanr::cmdstan_version(), error = function(e) NULL)
+  if (is.null(v))
+    rl_abort("cmdstanr is installed but CmdStan itself was not found. Install it with ",
+             "cmdstanr::install_cmdstan(), or point cmdstanr at an existing installation with ",
+             "cmdstanr::set_cmdstan_path().")
   invisible(TRUE)
 }

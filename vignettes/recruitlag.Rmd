@@ -1,21 +1,22 @@
 ---
-title: "Baby steps: running the test one line at a time"
+title: "Introduction to recruitlag: a worked analysis, step by step"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Baby steps: running the test one line at a time}
+  %\VignetteIndexEntry{Introduction to recruitlag: a worked analysis, step by step}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4,
+                      eval = requireNamespace("dplyr", quietly = TRUE) &&
+                             requireNamespace("tidyr", quietly = TRUE))
 ```
 
-This vignette is for someone who has never used the package, and maybe has
-not used R much either. There is no mathematics in it. Every step is shown,
-and after each step you should look at what R printed and check that it
-matches. If you want to know *why* the steps work, read the vignette called
-"The mathematics behind the test" afterwards.
+This vignette is for a reader new to the package. There is no mathematics
+in it. Every step is shown, and after each step you should look at what R
+printed and check that it matches. If you want to know *why* the steps work,
+read `vignette("mathematics", package = "recruitlag")` afterwards.
 
 The question the package answers is this. A plant population reproduces
 (flowers, fruits, seeds) and later new seedlings appear (recruits). If the
@@ -31,8 +32,8 @@ library(dplyr)
 library(ggplot2)
 ```
 
-Nothing is printed. That is correct: loading a package is silent. `dplyr`
-is for picking rows and columns out of tables, `ggplot2` for drawing.
+Loading a package prints nothing. `dplyr` is for picking rows and columns
+out of tables, `ggplot2` for drawing.
 
 ## Step 2. Look at a data set
 
@@ -78,17 +79,18 @@ then three huge ones. That difference is what the test is about. Draw it:
 ```{r}
 totals |>
   tidyr::pivot_longer(c(reproduction, recruits), names_to = "series", values_to = "count") |>
+  filter(!is.na(count)) |>
   ggplot(aes(period, count)) +
-  geom_col(fill = "grey40") +
+  geom_col(fill = "grey40", na.rm = TRUE) +
   facet_wrap(~ series, ncol = 1, scales = "free_y") +
   theme_minimal()
 ```
 
 ## Step 4. Measure how "bursty" each series is
 
-The package measures burstiness with a number between 0 and 1 called the Gini
-coefficient. 0 means every census had the same count. Close to 1 means almost
-everything happened at one census.
+The package measures burstiness with the Gini coefficient. 0 means every
+census had the same count; the maximum, which is $(n - 1)/n$ on $n$ censuses,
+means everything happened at one census.
 
 ```{r}
 rain_gini(totals$reproduction)
@@ -96,8 +98,8 @@ rain_gini(totals$recruits)
 ```
 
 (`rain_gini()` ignores the `NA`s.) Reproduction scores very low: it is spread
-evenly. Recruits score high: they are concentrated in a few censuses. Write
-those two numbers down.
+evenly. Recruits score high: they are concentrated in a few censuses. Note
+those two numbers.
 
 ## Step 5. Ask the key question
 
@@ -112,12 +114,14 @@ ce <- lag_ceiling(totals, K = 4, kernels = lag_kernels(4))
 ce
 ```
 
-Read the printout slowly. The line "reproduction (theorem bound)" repeats the
-Gini of reproduction. That number is the *ceiling*: no delay, of any shape,
-can make expected recruitment burstier than that. The line "observed
-recruitment" is the Gini of recruits. The last line divides one by the
-other: observed recruitment is many times burstier than any delay could make
-it.
+Read the printout line by line. The line "reproduction (theorem bound)"
+repeats the Gini of reproduction. That number is the *ceiling*: no delay, of
+any shape, can make expected recruitment burstier than that. The line
+"searched ceiling" is the largest Gini any of the delays actually tried
+produced on the scored censuses; it is close to the bound. The line
+"observed recruitment" is the Gini of recruits. The line "exceedance"
+divides the observed Gini by the searched ceiling: observed recruitment is
+many times burstier than any delay could make it.
 
 ## Step 6. Draw it
 
@@ -182,7 +186,7 @@ delay can explain the record. The full table, one row per delay, is in
 ht$table |> select(label, phi, p_silent, p_gini, p_cv) |> arrange(desc(p_gini)) |> head()
 ```
 
-## Step 9. Check yourself with a record where a delay is the truth
+## Step 9. A check with a record where a delay is the truth
 
 The same data set has a record in which recruits really are a delayed
 consequence of reproduction. Repeat Steps 2, 3, 5 and 8 on it.
@@ -239,7 +243,7 @@ blue tick, inside the region a delay can reach. So a delay could have
 produced this record, and in this case one did: this record was built with a
 true delay.
 
-Here is the important part, so read it twice. A dot to the left of the tick
+This is the important point. A dot to the left of the tick
 does not prove there was a delay. It only says the test cannot rule one out.
 Try the seasonal record with the gate instead:
 
