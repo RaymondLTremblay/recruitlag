@@ -7,10 +7,11 @@ bibentry(
   year    = "2026",
   note    = paste("R package version", meta$Version),
   url     = "https://github.com/RaymondLTremblay/recruitlag",
+  doi     = "10.5281/zenodo.23166996",
   textVersion = paste(
     "Tremblay, R. L. (2026). recruitlag: Can Episodic Recruitment Be a Delayed",
     paste0("Consequence of Continuous Reproduction? R package version ", meta$Version, "."),
-    "https://github.com/RaymondLTremblay/recruitlag")
+    "https://doi.org/10.5281/zenodo.23166996")
 )
 
 bibentry(

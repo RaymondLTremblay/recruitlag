@@ -1,5 +1,7 @@
 # recruitlag
 
+[![DOI](https://zenodo.org/badge/1368466227.svg)](https://doi.org/10.5281/zenodo.23166996)
+
 **Can episodic recruitment be a delayed consequence of continuous reproduction?**
 
 If recruitment is the delayed consequence of reproduction, then whatever the

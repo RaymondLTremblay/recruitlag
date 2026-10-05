@@ -5,7 +5,17 @@ Handoff written 2026-10-05, when `recruitlag` moved out of the Claude project
 Claude project cannot see the old project's memory, so everything a session
 needs to continue the release is here or in `CLAUDE.md`.
 
-## Where things stand (checked 2026-10-05)
+## Done 2026-10-05 (evening)
+
+* Review applied, commit `68372e8`, tag `v0.1.0` on it, stray `v.0.1.0` deleted.
+* Zenodo switched on; GitHub release "recruitlag 0.1.0" made from `v0.1.0`.
+* DOIs: version 0.1.0 **10.5281/zenodo.23166997** (the paper cites this one);
+  concept DOI (all versions) **10.5281/zenodo.23166996** (README badge, CITATION).
+* Still to do from section A: step 5 (the `@recruitlag` bib entry in the
+  Lepanthes repository), then the Lepanthes data deposit. Section B (CRAN)
+  untouched.
+
+## Where things stood (checked 2026-10-05, morning)
 
 * `master` is at `295a9df` and equals `origin/master` on GitHub
   (https://github.com/RaymondLTremblay/recruitlag, public since 2026-09-21).
