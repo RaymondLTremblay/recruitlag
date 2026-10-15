@@ -1,7 +1,9 @@
 #' The ceiling that any delay places on the concentration of recruitment
 #'
-#' If recruitment is the delayed consequence of reproduction, expected
-#' recruitment is a convolution of the reproductive record, and a convolution
+#' If recruitment is the delayed consequence of reproduction alone, that is,
+#' if the fraction of propagules that become recruits does not change over
+#' time, expected recruitment is a convolution of the reproductive record,
+#' and a convolution
 #' is a weighted average. A weighted average is never more concentrated in
 #' time than the series it averages, so reproduction's own concentration is a
 #' ceiling on the concentration of expected recruitment, attained only by a

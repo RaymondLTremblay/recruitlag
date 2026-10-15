@@ -33,7 +33,14 @@ projection-matrix convention: the first bin is the census before the recruit
 census) and $w$ the lag profile. The projection-matrix null is the special
 case $w = (1, 0, \dots, 0)$. `convolve_lag()` computes the sum for a given
 $w$; `lag_kernels()` builds families of $w$; the scale $c$ never matters for
-what follows.
+what follows. What does matter is that $c$ is a constant: it is the fraction
+of propagules that become recruits, and the hypothesis is that it does not
+change over time. If establishment varies from period to period, with
+rainfall, canopy or any other condition, expected recruitment is
+$c_t \sum_k w_k X_{t-\ell_0-k}$, which is not a weighted average of
+reproduction and can exceed the ceiling. The check therefore tests
+reproduction acting alone, and an exceedance points to a time-varying term
+between seed and recruit.
 
 ```{r}
 X <- lepanthes_census$inflorescences

@@ -1,3 +1,10 @@
+# recruitlag (development version)
+
+* The documentation (README, DESCRIPTION, `?lag_ceiling`, the mathematics vignette) now
+  states the condition behind the ceiling explicitly: reproduction acts alone, with a
+  constant fraction of propagules becoming recruits. A time-varying establishment term
+  is what an exceedance points to.
+
 # recruitlag 0.1.0
 
 First release. The software behind the companion paper on *Lepanthes eltoroensis*

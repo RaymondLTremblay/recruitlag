@@ -71,5 +71,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Raymond L. Tremblay \email{raymond.tremblay@gmail.com} (\href{https://orcid.org/0000-0002-8588-4372}{ORCID}) [copyright holder]
 
+Authors:
+\itemize{
+  \item Raymond L. Tremblay \email{raymond.tremblay@gmail.com} (\href{https://orcid.org/0000-0002-8588-4372}{ORCID}) [copyright holder]
+}
+
 }
 \keyword{internal}
