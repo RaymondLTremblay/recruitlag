@@ -5,7 +5,24 @@ Handoff written 2026-10-05, when `recruitlag` moved out of the Claude project
 Claude project cannot see the old project's memory, so everything a session
 needs to continue the release is here or in `CLAUDE.md`.
 
+## Done 2026-10-15
+
+* **CRAN: 0.1.0 accepted 2026-10-15** (Konstanze Lauseker, "on its way to CRAN"), no
+  changes requested. The CRAN tarball was built from `a40b52c` (see `CRAN-SUBMISSION`);
+  the `v0.1.0` tag and Zenodo record are on `68372e8`. The only difference is the DOI
+  added to README and `inst/CITATION`. Section B is closed.
+* DESCRIPTION bumped to `0.1.0.9000`; NEWS.md already has a development heading.
+* Still open from section A: step 5 (the `@recruitlag` bib entry in the Lepanthes
+  repository) and the Lepanthes data deposit.
+* When the Oikos paper's status changes, update "submitted" in `inst/CITATION` and
+  NEWS.md, and release 0.1.1.
+
 ## Done 2026-10-05 (evening)
+
+* **CRAN: 0.1.0 submitted and confirmed 2026-10-05**, pretests clean (Windows and Debian,
+  1 NOTE each: new submission, species names, cmdstanr via Additional_repositories).
+  Awaiting manual inspection. If CRAN asks for changes, the next version is 0.1.1; the paper
+  keeps citing 0.1.0 on Zenodo (10.5281/zenodo.23166997).
 
 * Review applied, commit `68372e8`, tag `v0.1.0` on it, stray `v.0.1.0` deleted.
 * Zenodo switched on; GitHub release "recruitlag 0.1.0" made from `v0.1.0`.

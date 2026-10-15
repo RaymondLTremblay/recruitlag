@@ -2,13 +2,14 @@ Package: recruitlag
 Type: Package
 Title: Can Episodic Recruitment be a Delayed Consequence of Continuous
     Reproduction?
-Version: 0.1.0
+Version: 0.1.0.9000
 Authors@R:
     person("Raymond L.", "Tremblay", email = "raymond.tremblay@gmail.com",
            role = c("aut", "cre", "cph"),
            comment = c(ORCID = "0000-0002-8588-4372"))
 Description: Tests whether an episodic recruitment record can be the delayed
-    consequence of a reproductive record, under any distributed lag. A delay
+    consequence of a reproductive record alone, under any distributed lag and
+    with a constant fraction of propagules becoming recruits. A delay
     is a convolution, and a convolution is a weighted average, so the
     concentration in time of expected recruitment can never exceed that of
     reproduction: reproduction's own concentration is a ceiling. The package
@@ -55,4 +56,3 @@ Roxygen: list(markdown = TRUE)
 URL: https://github.com/RaymondLTremblay/recruitlag
 BugReports: https://github.com/RaymondLTremblay/recruitlag/issues
 Config/roxygen2/version: 8.1.0
-RoxygenNote: 7.3.1

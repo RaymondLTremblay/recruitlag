@@ -9,3 +9,4 @@ inst/doc
 *conflicted copy*
 *.tar.gz
 _to_delete/
+Claude outputs/

@@ -1,11 +1,14 @@
 # recruitlag
 
+[![CRAN status](https://www.r-pkg.org/badges/version/recruitlag)](https://CRAN.R-project.org/package=recruitlag)
 [![DOI](https://zenodo.org/badge/1368466227.svg)](https://doi.org/10.5281/zenodo.23166996)
 
 **Can episodic recruitment be a delayed consequence of continuous reproduction?**
 
-If recruitment is the delayed consequence of reproduction, then whatever the
-delay, expected recruitment is a *convolution* of the reproductive record:
+If recruitment is the delayed consequence of reproduction alone, that is, if the
+fraction of propagules that become recruits does not change over time, then
+whatever the delay, expected recruitment is a *convolution* of the reproductive
+record:
 non-negative weights applied to reproduction at successive past periods. A
 convolution is a weighted average, and a weighted average is never more
 concentrated in time than the series it averages. Reproduction's own
@@ -24,6 +27,14 @@ It is the software behind the companion paper on the epiphytic orchid
 *Lepanthes eltoroensis*, whose census data are included.
 
 ## Installation
+
+The released version is on CRAN:
+
+```r
+install.packages("recruitlag")
+```
+
+The development version is on GitHub:
 
 ```r
 # install.packages("remotes")
