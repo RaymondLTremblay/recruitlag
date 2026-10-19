@@ -1,6 +1,7 @@
 # recruitlag
 
 [![CRAN status](https://www.r-pkg.org/badges/version/recruitlag)](https://CRAN.R-project.org/package=recruitlag)
+[![CRAN downloads](https://cranlogs.r-pkg.org/badges/grand-total/recruitlag)](https://cran.r-project.org/package=recruitlag)
 [![DOI](https://zenodo.org/badge/1368466227.svg)](https://doi.org/10.5281/zenodo.23166996)
 
 **Can episodic recruitment be a delayed consequence of continuous reproduction?**
@@ -109,9 +110,10 @@ Two forces drive the differences and they pull in opposite directions.
 recruitment minus death, so an adult series is smooth whatever the plants
 are doing; the exceedance computed against it is the largest available. It
 is the index most favourable to the argument this package exists to make,
-and therefore the one to trust least. The same holds on the recruit side:
-an untagged seedling count is a stock, and it inflates the observed
-concentration rather than the ceiling.
+and therefore the one to trust least. On the recruit side a stock works the
+other way: an untagged seedling count is a stock, a smoothed record of past
+recruitment, and it lowers the observed concentration, so it hides an excess
+rather than creating one.
 
 **Measurement error runs the other way and protects the lag hypothesis.** A
 structure caught only sometimes looks more erratic than the truth, which

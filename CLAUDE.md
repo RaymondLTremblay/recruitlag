@@ -152,8 +152,10 @@ column, and what to do, never the usual opaque R error.
   minus death, so an adult series is smooth whatever the plants do; its ceiling
   is the lowest available and its exceedance the largest, which makes it the
   index most flattering to the paper's own argument and therefore the one to
-  trust least. The same applies to recruits: an untagged seedling count is a
-  stock and inflates the observed concentration.
+  trust least. On the recruit side a stock works the other way: an untagged
+  seedling count is a smoothed record of past recruitment (a convolution of the
+  flux), so it lowers the observed concentration and hides an excess rather than
+  creating one (corrected 15 Oct 2026; it said "inflates" before).
 - **Measurement error runs the other way and protects the lag hypothesis.** A
   structure caught only sometimes looks more erratic than it is, which raises
   its concentration, raises the ceiling and lowers the exceedance. So a low
